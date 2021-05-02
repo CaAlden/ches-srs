@@ -1,30 +1,41 @@
-import React, { FC, useMemo } from 'react';
-import { MoveTree, useChessInstance, useFlushState, useMoveTree } from '../context';
+import React, { FC } from 'react';
+import { useController } from '../controller';
 
-import "./index.css";
+import './index.css';
 
 interface IButtonProps {
   onClick: () => void;
+  disabled?: boolean;
 }
-const ControlButton: FC<IButtonProps> = ({ onClick, children }) => {
+const ControlButton: FC<IButtonProps> = ({ onClick, children, disabled }) => {
   return (
-    <button onClick={onClick} className="control-btn">{children}</button>
+    <button disabled={false} aria-disabled={disabled} onClick={onClick} className={`control-btn button-reset ${disabled ? 'disabled' : ''}`}>
+      {children}
+    </button>
   );
-}
+};
 
-export default function Controls () {
-  const game = useChessInstance();
-  const flush = useFlushState();
+export default function Controls() {
+  const controller = useController();
   return (
     <div className="controls-container">
-      <ControlButton onClick={() => console.log('Flip')}>🔄</ControlButton>
-      <ControlButton onClick={() => {
-        game.undo();
-        flush();
-      }}>⏪</ControlButton>
-      <ControlButton onClick={() => console.log('Back')}>⬅️</ControlButton>
-      <ControlButton onClick={() => console.log('Forward')}>➡️</ControlButton>
-      <ControlButton onClick={() => console.log('FF')}>⏩</ControlButton>
+      <ControlButton
+        onClick={() => {
+          controller.flipPerspective();
+        }}>
+        🔄
+      </ControlButton>
+      <ControlButton
+        disabled={}
+        onClick={() => {
+          // Set the game to blank.
+          controller.rewind();
+        }}>
+        ⏪
+      </ControlButton>
+      <ControlButton onClick={() => controller.stepBack()}>⬅️</ControlButton>
+      <ControlButton onClick={() => controller.stepForward()}>➡️</ControlButton>
+      <ControlButton onClick={() => controller.fastForward()}>⏩</ControlButton>
     </div>
   );
 }
