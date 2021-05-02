@@ -1,25 +1,29 @@
 import { Chess, ChessInstance, Move } from 'chess.js';
 import React, { FC, useMemo } from 'react';
-import { MoveTree, useChessInstance, useFlushState, useMoveTree, useMoveTreeContext } from '../context';
+import { useController, MoveTree } from '../controller';
 
-const Move: FC<{ move: Move; moveNumber: number, chess: ChessInstance }> = ({ move, moveNumber, chess }) => {
-  const activeGame = useChessInstance();
-  const { setCurrentFen } = useMoveTreeContext();
-  const flush = useFlushState();
-  console.log(chess.pgn());
+import "./index.css";
+
+const Move: FC<{ move: Move; moveNumber: number; chess: ChessInstance }> = ({ move, moveNumber, chess }) => {
+  const controller = useController();
+  const isActiveMove = controller.fen === chess.fen();
   return (
-    <span>
-      {move.color === 'w' && `${moveNumber}.`}
-      <button onClick={() => {
-        activeGame.load_pgn(chess.pgn());
-        setCurrentFen(chess.fen());
-        flush();
-      }}>{move.san}</button>
-    </span>
+    <>
+      {move.color === 'w' &&
+        <span style={{ marginLeft: '0.5em'}}>{`${moveNumber}.`}</span>
+      }
+      <button
+        className={`button-reset ${isActiveMove ? 'current-move' : 'move'}`}
+        onClick={() => {
+          controller.setPgn(chess.pgn());
+        }}>
+        {move.san}
+      </button>
+    </>
   );
 };
 
-const MoveTree: FC<{ moveTree: MoveTree, chess: ChessInstance, depth: number }> = ({ moveTree, chess, depth }) => {
+const MoveTree: FC<{ moveTree: MoveTree; chess: ChessInstance; depth: number }> = ({ moveTree, chess, depth }) => {
   const nextChessInstances = useMemo(() => {
     return moveTree.branches.map(b => {
       const extended = new Chess();
@@ -34,7 +38,7 @@ const MoveTree: FC<{ moveTree: MoveTree, chess: ChessInstance, depth: number }> 
   ) : moveTree.branches.size === 1 ? (
     <>
       {currentMove}
-      <MoveTree 
+      <MoveTree
         moveTree={moveTree.branches.valueSeq().get(0)!}
         depth={depth}
         chess={nextChessInstances.get(moveTree.branches.valueSeq().get(0)!.move.san)!}
@@ -44,26 +48,33 @@ const MoveTree: FC<{ moveTree: MoveTree, chess: ChessInstance, depth: number }> 
     <div style={{ paddingLeft: `calc(2px * ${depth})` }}>
       {currentMove}
       <div>
-        {moveTree.branches.map((b, k) => (
-          <MoveTree key={k} moveTree={b} chess={nextChessInstances.get(k)!} depth={depth + 1} />
-        )).valueSeq().toArray()}
+        {moveTree.branches
+          .map((b, k) => <MoveTree key={k} moveTree={b} chess={nextChessInstances.get(k)!} depth={depth + 1} />)
+          .valueSeq()
+          .toArray()}
       </div>
     </div>
   );
 };
 
 const PGNExplorer: FC = () => {
-  const tree = useMoveTree();
-  const initialChessInstances = useMemo(() => tree.map(b => {
-    const extended = new Chess();
-    extended.move(b.move.san);
-    return extended;
-  }), [tree])
+  const controller = useController();
+  const tree = controller.moveTree;
+  const initialChessInstances = useMemo(
+    () =>
+      tree.map(b => {
+        const extended = new Chess();
+        extended.move(b.move.san);
+        return extended;
+      }),
+    [tree],
+  );
   return (
-    <div>
-      {tree.map((subTree, k) => (
-        <MoveTree key={k} moveTree={subTree} chess={initialChessInstances.get(k)!} depth={1} />
-      )).valueSeq().toArray()}
+    <div className="pgn-explorer">
+      {tree
+        .map((subTree, k) => <MoveTree key={k} moveTree={subTree} chess={initialChessInstances.get(k)!} depth={1} />)
+        .valueSeq()
+        .toArray()}
     </div>
   );
 };

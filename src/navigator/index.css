@@ -31,14 +31,13 @@
   border-right: 1px solid black;
 }
 
-.control-btn {
+.button-reset {
   background: none repeat scroll 0 0 transparent;
   border: medium none;
+  font-size: 1em;
   border-spacing: 0;
   color: inherit;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: normal;
   line-height: 1.42rem;
   list-style: none outside none;
   margin: 0;
@@ -47,15 +46,47 @@
   text-indent: 0;
 }
 
+.disabled {
+  pointer-events: none;
+}
+
 .control-btn:hover {
   background: #f2f2f2;
 }
 
-pgn-explorer {
+.pgn-explorer {
   padding: 5px;
   border-left: 1px solid black;
   border-right: 1px solid black;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  max-width: 320px;
+  font-weight: 400;
+
+  display: grid;
+  grid-auto-rows: 2em;
+  grid-template-columns: repeat(auto-fill, minmax(auto, 2em));
+  align-items: center;
+}
+
+.move {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.move:hover {
+  color: blue;
+  background: #f2f2f2;
+  opacity: 0.8;
+}
+
+.move:active {
+  color: red;
+}
+
+.current-move {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f2f2;
+  color: green;
 }
