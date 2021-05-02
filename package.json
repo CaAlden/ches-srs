@@ -4,17 +4,22 @@
   "description": "Chess Opening Memorization Tool using SRS",
   "main": "index.js",
   "author": "Campbell Alden",
-  "license": "GPL",
+  "license": "GPL-3.0",
   "scripts": {
     "start": "parcel start ./src/index.html"
   },
   "dependencies": {
+    "chess.js": "^0.11.0",
+    "chessground": "^7.11.1",
+    "immutable": "^4.0.0-rc.12",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "@types/chess.js": "^0.10.1",
     "@types/react": "^17.0.4",
     "@types/react-dom": "^17.0.3",
-    "chessground": "^7.11.1",
     "parcel-bundler": "^1.12.5",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
     "typescript": "^4.2.4"
   }
 }

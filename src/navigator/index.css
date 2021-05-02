@@ -1,0 +1,61 @@
+.navigator-container {
+  background: #fff;
+  display: grid;
+  grid-template-columns: 1fr;
+  /**
+   * Template rows represent the player info, controls, pgn explorer, and other player info.
+   */
+  grid-template-rows: 30px 30px 1fr 30px;
+  width: 320px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border: 1px solid black;
+  padding: 5px;
+}
+
+.player-info-rating {
+  font-weight: bold;
+} 
+
+.controls-container {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  gap: 5px;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+}
+
+.control-btn {
+  background: none repeat scroll 0 0 transparent;
+  border: medium none;
+  border-spacing: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1.42rem;
+  list-style: none outside none;
+  margin: 0;
+  text-align: center;
+  text-decoration: none;
+  text-indent: 0;
+}
+
+.control-btn:hover {
+  background: #f2f2f2;
+}
+
+pgn-explorer {
+  padding: 5px;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
