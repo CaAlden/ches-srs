@@ -1,5 +1,6 @@
 import React, { FC } from 'react';
 import { useController } from '../controller';
+import Button from '../ui/Button';
 
 import './index.css';
 
@@ -9,9 +10,9 @@ interface IButtonProps {
 }
 const ControlButton: FC<IButtonProps> = ({ onClick, children, disabled }) => {
   return (
-    <button disabled={false} aria-disabled={disabled} onClick={onClick} className={`control-btn button-reset ${disabled ? 'disabled' : ''}`}>
+    <Button disabled={false} aria-disabled={disabled} onClick={onClick} className="control-btn">
       {children}
-    </button>
+    </Button>
   );
 };
 
@@ -26,7 +27,6 @@ export default function Controls() {
         🔄
       </ControlButton>
       <ControlButton
-        disabled={}
         onClick={() => {
           // Set the game to blank.
           controller.rewind();

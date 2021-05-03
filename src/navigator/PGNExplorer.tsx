@@ -1,6 +1,7 @@
 import { Chess, ChessInstance, Move } from 'chess.js';
 import React, { FC, useMemo } from 'react';
 import { useController, MoveTree } from '../controller';
+import Button from '../ui/Button';
 
 import "./index.css";
 
@@ -13,13 +14,24 @@ const Move: FC<{ move: Move; moveNumber: number; chess: ChessInstance }> = ({ mo
       {isWhite &&
         <span className="move-number">{`${moveNumber}.`}</span>
       }
-      <button
-        className={`button-reset ${isWhite ? 'left' : ''} ${isActiveMove ? 'current-move' : 'move'}`}
+      <Button
+        className={`${isWhite ? 'left' : ''} ${isActiveMove ? '' : 'move'}`}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderBottom: '1px solid #aaa',
+          ...(isActiveMove ? {
+            color: 'green',
+            background: '#f2f2f2',
+          } : {
+          })
+        }}
         onClick={() => {
           controller.setPgn(chess.pgn());
         }}>
         {move.san}
-      </button>
+      </Button>
     </>
   );
 };
