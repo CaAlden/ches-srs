@@ -7,13 +7,14 @@ import "./index.css";
 const Move: FC<{ move: Move; moveNumber: number; chess: ChessInstance }> = ({ move, moveNumber, chess }) => {
   const controller = useController();
   const isActiveMove = controller.fen === chess.fen();
+  const isWhite = move.color === 'w';
   return (
     <>
-      {move.color === 'w' &&
-        <span style={{ marginLeft: '0.5em'}}>{`${moveNumber}.`}</span>
+      {isWhite &&
+        <span className="move-number">{`${moveNumber}.`}</span>
       }
       <button
-        className={`button-reset ${isActiveMove ? 'current-move' : 'move'}`}
+        className={`button-reset ${isWhite ? 'left' : ''} ${isActiveMove ? 'current-move' : 'move'}`}
         onClick={() => {
           controller.setPgn(chess.pgn());
         }}>
