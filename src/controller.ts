@@ -227,15 +227,29 @@ class Controller {
     this.setPgn(innerChess.pgn());
   };
 
-  public setPgn = (pgn: string) => {
+  public setPgn = (pgn: string, eraseHistory: boolean = false) => {
     this.chess.load_pgn(pgn);
-    this.activeMoveNode = getCurrentActiveNode(this.chess.history({ verbose: true }), this.internalMoveTree);
+    const newHistory = this.chess.history({ verbose: true });
+    if (eraseHistory) {
+      this.internalMoveTree = updateTree(newHistory, ImmutableMap());
+    }
+    this.activeMoveNode = getCurrentActiveNode(newHistory, this.internalMoveTree);
     this.cg?.set(this.calcCGConfig());
     this.cg?.set({
       lastMove: this.activeMoveNode ? [this.activeMoveNode.move.from, this.activeMoveNode.move.to] : undefined,
     })
     this.onUpdate?.();
   }
+
+  public setFen = (fen: string, eraseHistory: boolean = false) => {
+    this.chess.load(fen);
+    this.activeMoveNode = null;
+    if (eraseHistory) {
+      this.internalMoveTree = ImmutableMap();
+    }
+    this.cg?.set(this.calcCGConfig());
+    this.onUpdate?.();
+  };
 
   public refCallback = (node: null | HTMLDivElement) => {
     // Initialize the chessground view when given an HTML element
