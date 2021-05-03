@@ -1,5 +1,4 @@
 .navigator-container {
-  background: #fff;
   display: grid;
   grid-template-columns: 1fr;
   /**
@@ -10,6 +9,7 @@
 }
 
 .player-info {
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,6 +23,7 @@
 } 
 
 .controls-container {
+  background: #fff;
   display: flex;
   align-items: center;
   padding: 5px;
@@ -37,6 +38,7 @@
 }
 
 .pgn-explorer {
+  background: #fff;
   border-left: 1px solid black;
   border-right: 1px solid black;
   max-width: 320px;

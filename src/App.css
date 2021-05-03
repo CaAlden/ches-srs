@@ -4,7 +4,9 @@ div,p,button,h1,h2,h3,h4,h5,span {
 
 .app-container {
   display: grid;
-  grid-template-columns: 320px 320px;
+  grid-template-columns: minmax(auto, 500px) 320px;
+  grid-template-rows: minmax(auto, 500px) 1fr;
+  grid-template-areas: "left right"
+                       "tabs tabs";
   gap: 40px;
-  padding: 12.5%;
 }
