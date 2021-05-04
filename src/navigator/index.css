@@ -44,11 +44,15 @@
   max-width: 320px;
   font-weight: 400;
 
-  display: grid;
-  grid-auto-rows: 2em;
-  grid-template-columns: 25px 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   max-height: 20em;
   overflow-y: auto;
+}
+
+.pgn-explorer-row {
+  display: grid;
+  grid-template-columns: 4em 1fr 1fr;
 }
 
 .move-number {

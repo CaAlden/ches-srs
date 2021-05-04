@@ -1,17 +1,10 @@
-import { Chess, ChessInstance, Move } from 'chess.js';
-import React, { FC, ReactNode, useMemo } from 'react';
+import { Move } from 'chess.js';
+import React, { FC, useMemo } from 'react';
 import { useController, MoveTree } from '../controller';
 import { OrderedMap as ImmutableMap } from 'immutable';
 import Button from '../ui/Button';
 
 import './index.css';
-
-function immutableMove(chess: ChessInstance, san: string) {
-  const nextState = new Chess();
-  nextState.load_pgn(chess.pgn());
-  nextState.move(san);
-  return nextState;
-}
 
 interface IMoveProps {
   san: string;
@@ -27,7 +20,7 @@ const MoveComponent: FC<IMoveProps> = ({ san, active }) => {
 
 const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; }> = ({ moveNumber, white, black }) => {
   return (
-    <div>
+    <div className="pgn-explorer-row">
       <span>{moveNumber}.</span>
       <span>{white ? <MoveComponent san={white.san} active={false} /> : '...'}</span>
       <span>{black ? <MoveComponent san={black.san} active={false} /> : '...'}</span>
@@ -37,12 +30,12 @@ const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; }> = ({
 
 const Branches: FC<{ branches: ImmutableMap<string, MoveTree> }> = ({ branches }) => {
   return branches.size === 0 ? null : (
-    <ul>{
+    <ul className="branches">{
       branches.map((tree, san) => (
-        <li key={san}>
+        <li className="branch" key={san}>
           {tree.moves.map((move, i) => 
             <React.Fragment key={move.san}>
-              {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + i}.</span>}
+              {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + Math.floor(i / 2)}.</span>}
               {move.color === 'b' && i === 0 && <span>...</span>}
               <span>{move.san}</span>
             </React.Fragment>
@@ -54,41 +47,63 @@ const Branches: FC<{ branches: ImmutableMap<string, MoveTree> }> = ({ branches }
   );
 };
 
+function pair(arr: Move[]): Array<[Move | undefined, Move | undefined]> {
+  const next: Array<[Move | undefined, Move | undefined]> = [];
+
+  if (arr.length === 0) {
+    return [];
+  }
+
+  if (arr.length === 1) {
+    return [
+      arr[0].color === 'w' ? [arr[0], undefined] : [undefined, arr[0]],
+    ];
+  }
+
+  let i = 0;
+  if (arr[0].color === 'b') {
+    next.push([undefined, arr[0]]);
+    i++;
+  }
+
+  for(;i < arr.length - 1; i+= 2) {
+    next.push([arr[i], arr[i+1]]);
+  }
+
+  if (arr[arr.length - 1].color === 'w') {
+    next.push([arr[arr.length - 1], undefined]);
+  }
+
+  return next;
+}
+
 const MovesTable: FC<{ moveTree: ImmutableMap<string, MoveTree> }> = ({ moveTree }) => {
-  const groups = useMemo((): Array<[[Move | undefined, Move | undefined], ImmutableMap<string, MoveTree> | undefined]> => {
-    const mainlineChunks: Array<[[Move | undefined, Move | undefined], ImmutableMap<string, MoveTree> | undefined]> = [];
-    let mainLineBranch: MoveTree | undefined = moveTree.first();
-    while(mainLineBranch !== undefined) {
-      let i: number;
-      for (i = 0; i <= mainLineBranch.moves.length - 2; i += 2) {
-        mainlineChunks.push(
-          [[mainLineBranch.moves[i], mainLineBranch.moves[i + 1]], i + 2 === mainLineBranch.moves.length ? mainLineBranch.branches.rest() : undefined]
-        )
-      }
-
-      if (i === mainLineBranch.moves.length - 1) {
-        const lastMove = mainLineBranch.moves[i];
-        mainlineChunks.push(
-          [
-            [lastMove, undefined],
-            mainLineBranch.branches.rest(),
-          ]
-        )
-      }
-
-      mainLineBranch = mainLineBranch.branches.first();
+  console.log(moveTree);
+  const chunks = useMemo((): Array<[MoveTree, ImmutableMap<string, MoveTree>]> => {
+    const arr: Array<[MoveTree, ImmutableMap<string, MoveTree>]> = [];
+    if (!moveTree) {
+      return arr;
     }
-    return mainlineChunks;
-  }, [moveTree]);
 
+    let chunk: MoveTree | undefined = moveTree.first();
+    while(chunk) {
+      arr.push([chunk, chunk.branches.rest()]);
+      chunk = chunk.branches.first();
+    }
+    return arr;
+  }, [moveTree]);
   return (
-    <div>{groups.map(([mainLine, branches], i) => (
-      <React.Fragment key={`${i}-${mainLine[0]?.san}-${mainLine[1]?.san}-${branches?.size}`}>
-        <MoveTableRow white={mainLine[0]} black={mainLine[1]} moveNumber={i + 1} />
-        {branches && <Branches branches={branches} />}
-      </React.Fragment>
-    ))
-    }</div>
+    <div className="pgn-explorer">{
+      chunks.map(([chunk, branches]) => (
+        <React.Fragment key={`${chunk.moves[0].san}-${chunk.sectionStart}`}>
+          {pair(chunk.moves).map(([white, black], i) => {
+            return <MoveTableRow key={i} white={white} black={black} moveNumber={chunk.sectionStart + i} />;
+          })}
+          {branches && <Branches branches={branches} />}
+        </React.Fragment>
+      ))}
+      <Branches branches={moveTree.rest()} />
+    </div>
   );
 };
 
