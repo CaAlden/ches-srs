@@ -1,95 +1,99 @@
 import { Chess, ChessInstance, Move } from 'chess.js';
-import React, { FC, useMemo } from 'react';
+import React, { FC, ReactNode, useMemo } from 'react';
 import { useController, MoveTree } from '../controller';
+import { OrderedMap as ImmutableMap } from 'immutable';
 import Button from '../ui/Button';
 
-import "./index.css";
+import './index.css';
 
-const Move: FC<{ move: Move; moveNumber: number; chess: ChessInstance }> = ({ move, moveNumber, chess }) => {
-  const controller = useController();
-  const isActiveMove = controller.fen === chess.fen();
-  const isWhite = move.color === 'w';
+function immutableMove(chess: ChessInstance, san: string) {
+  const nextState = new Chess();
+  nextState.load_pgn(chess.pgn());
+  nextState.move(san);
+  return nextState;
+}
+
+interface IMoveProps {
+  san: string;
+  active: boolean;
+}
+const MoveComponent: FC<IMoveProps> = ({ san, active }) => {
   return (
-    <>
-      {isWhite &&
-        <span className="move-number">{`${moveNumber}.`}</span>
+    <Button onClick={() => console.log('TODO')} style={{ fontWeight: active ? 'bold' : 'normal' }}>
+      {san}
+    </Button>
+  );
+};
+
+const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; }> = ({ moveNumber, white, black }) => {
+  return (
+    <div>
+      <span>{moveNumber}.</span>
+      <span>{white ? <MoveComponent san={white.san} active={false} /> : '...'}</span>
+      <span>{black ? <MoveComponent san={black.san} active={false} /> : '...'}</span>
+    </div>
+  );
+};
+
+const Branches: FC<{ branches: ImmutableMap<string, MoveTree> }> = ({ branches }) => {
+  return branches.size === 0 ? null : (
+    <ul>{
+      branches.map((tree, san) => (
+        <li key={san}>
+          {tree.moves.map((move, i) => 
+            <React.Fragment key={move.san}>
+              {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + i}.</span>}
+              {move.color === 'b' && i === 0 && <span>...</span>}
+              <span>{move.san}</span>
+            </React.Fragment>
+          )}
+          <Branches branches={tree.branches} />
+        </li>
+      )).valueSeq().toArray()
+    }</ul>
+  );
+};
+
+const MovesTable: FC<{ moveTree: ImmutableMap<string, MoveTree> }> = ({ moveTree }) => {
+  const groups = useMemo((): Array<[[Move | undefined, Move | undefined], ImmutableMap<string, MoveTree> | undefined]> => {
+    const mainlineChunks: Array<[[Move | undefined, Move | undefined], ImmutableMap<string, MoveTree> | undefined]> = [];
+    let mainLineBranch: MoveTree | undefined = moveTree.first();
+    while(mainLineBranch !== undefined) {
+      let i: number;
+      for (i = 0; i <= mainLineBranch.moves.length - 2; i += 2) {
+        mainlineChunks.push(
+          [[mainLineBranch.moves[i], mainLineBranch.moves[i + 1]], i + 2 === mainLineBranch.moves.length ? mainLineBranch.branches.rest() : undefined]
+        )
       }
-      <Button
-        className={`${isWhite ? 'left' : ''} ${isActiveMove ? '' : 'move'}`}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: '1px solid #aaa',
-          ...(isActiveMove ? {
-            color: 'green',
-            background: '#f2f2f2',
-          } : {
-          })
-        }}
-        onClick={() => {
-          controller.setPgn(chess.pgn());
-        }}>
-        {move.san}
-      </Button>
-    </>
-  );
-};
 
-const MoveTree: FC<{ moveTree: MoveTree; chess: ChessInstance; depth: number }> = ({ moveTree, chess, depth }) => {
-  const nextChessInstances = useMemo(() => {
-    return moveTree.branches.map(b => {
-      const extended = new Chess();
-      extended.load_pgn(chess.pgn());
-      extended.move(b.move.san);
-      return extended;
-    });
-  }, [chess, moveTree]);
-  const currentMove = <Move chess={chess} move={moveTree.move} moveNumber={moveTree.moveNumber} />;
-  return moveTree.branches.size === 0 ? (
-    currentMove
-  ) : moveTree.branches.size === 1 ? (
-    <>
-      {currentMove}
-      <MoveTree
-        moveTree={moveTree.branches.valueSeq().get(0)!}
-        depth={depth}
-        chess={nextChessInstances.get(moveTree.branches.valueSeq().get(0)!.move.san)!}
-      />
-    </>
-  ) : (
-    <div style={{ paddingLeft: `calc(2px * ${depth})` }}>
-      {currentMove}
-      <div>
-        {moveTree.branches
-          .map((b, k) => <MoveTree key={k} moveTree={b} chess={nextChessInstances.get(k)!} depth={depth + 1} />)
-          .valueSeq()
-          .toArray()}
-      </div>
-    </div>
-  );
-};
+      if (i === mainLineBranch.moves.length - 1) {
+        const lastMove = mainLineBranch.moves[i];
+        mainlineChunks.push(
+          [
+            [lastMove, undefined],
+            mainLineBranch.branches.rest(),
+          ]
+        )
+      }
 
-const PGNExplorer: FC = () => {
-  const controller = useController();
-  const tree = controller.moveTree;
-  const initialChessInstances = useMemo(
-    () =>
-      tree.map(b => {
-        const extended = new Chess();
-        extended.move(b.move.san);
-        return extended;
-      }),
-    [tree],
-  );
+      mainLineBranch = mainLineBranch.branches.first();
+    }
+    return mainlineChunks;
+  }, [moveTree]);
+
   return (
-    <div className="pgn-explorer">
-      {tree
-        .map((subTree, k) => <MoveTree key={k} moveTree={subTree} chess={initialChessInstances.get(k)!} depth={1} />)
-        .valueSeq()
-        .toArray()}
-    </div>
+    <div>{groups.map(([mainLine, branches], i) => (
+      <React.Fragment key={`${i}-${mainLine[0]?.san}-${mainLine[1]?.san}-${branches?.size}`}>
+        <MoveTableRow white={mainLine[0]} black={mainLine[1]} moveNumber={i + 1} />
+        {branches && <Branches branches={branches} />}
+      </React.Fragment>
+    ))
+    }</div>
   );
 };
 
-export default PGNExplorer;
+export default function PGNExplorer() {
+  const controller = useController();
+
+  return <MovesTable moveTree={controller.moveTree} />;
+}

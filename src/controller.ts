@@ -3,12 +3,12 @@ import { Api as ChessgroundApi } from 'chessground/api';
 import { Chess, ChessInstance, Move, ShortMove } from 'chess.js';
 import { Chessground } from 'chessground';
 import { Key } from 'chessground/types';
-import { OrderedMap as ImmutableMap } from 'immutable';
+import { OrderedMap as ImmutableMap, OrderedMap } from 'immutable';
 import {Config} from 'chessground/config';
 
 export interface MoveTree {
-  move: Move;
-  moveNumber: number;
+  moves: Move[];
+  sectionStart: number;
   branches: ImmutableMap<string, MoveTree>;
 }
 
@@ -33,56 +33,83 @@ function toTurn(t: 'b' | 'w'): 'black' | 'white' {
   return t === 'b' ? 'black' : 'white';
 }
 
+export function areMovesEqual(a: Move, b: Move) {
+  return a.san === b.san;
+}
+
 /**
  * Helper for updating the branching tree of PGNs with a new history.
  */
-function updateTree(
+export function updateTree(
   moves: Move[],
   tree: ImmutableMap<string, MoveTree>,
   depth: number = 1,
 ): ImmutableMap<string, MoveTree> {
   if (moves.length === 0) {
     return tree;
-  } else {
-    const move = moves[0];
-    const treeMove = tree.get(move.san);
-    const nextDepth = move.color === 'w' ? depth : depth + 1;
-    if (treeMove) {
-      return tree.set(move.san, {
-        ...treeMove,
-        branches: updateTree(moves.slice(1), treeMove.branches, nextDepth),
-      });
-    } else {
-      return tree.set(move.san, {
-        move,
-        moveNumber: depth,
-        branches: updateTree(moves.slice(1), ImmutableMap(), nextDepth),
+  }
+
+  const activeBranch = tree.get(moves[0].san);
+  if (activeBranch === undefined) {
+    return tree.set(moves[0].san, {
+      moves,
+      sectionStart: Math.floor((depth + 1) / 2),
+      branches: OrderedMap(),
+    });
+  }
+
+  let i: number;
+  for (i = 0; i < moves.length && i < activeBranch.moves.length; i++) {
+    if (!areMovesEqual(activeBranch.moves[i], moves[i])) {
+      const commonHistory = moves.slice(0, i);
+      return tree.set(activeBranch.moves[0].san, {
+        moves: commonHistory,
+        sectionStart: Math.floor((depth + 1) / 2),
+        // Split the two apart.
+        branches: OrderedMap([
+          [activeBranch.moves[i].san, {
+            moves: activeBranch.moves.slice(i),
+            sectionStart: Math.floor((depth + i + 1) / 2),
+            branches: OrderedMap(),
+          }],
+          [moves[i].san, {
+            moves: moves.slice(i),
+            sectionStart: Math.floor((depth + i + 1) / 2),
+            branches: OrderedMap(),
+          }],
+        ]),
       });
     }
   }
-}
 
-/**
- * Helper for locating the current active node in a tree
- */
-function getCurrentActiveNode(moves: Move[], tree: ImmutableMap<string, MoveTree>): MoveTree | null {
-  if (moves.length === 0) {
-    return null;
-  }
-
-  const first = moves[0];
-  const rest = moves.slice(1);
-
-  const match = tree.get(first.san) ?? null;
-  if (match) {
-    if (rest.length === 0) {
-      return match; 
+  if (moves.length > activeBranch.moves.length) {
+    if (activeBranch.branches.has(moves[i].san)) {
+      return tree.set(activeBranch.moves[0].san, {
+        moves: activeBranch.moves,
+        sectionStart: activeBranch.sectionStart,
+        branches: updateTree(moves.slice(i), activeBranch.branches, depth + i),
+      });
+    } else if (activeBranch.branches.size === 0) {
+      return tree.set(moves[0].san, {
+        moves,
+        sectionStart: activeBranch.sectionStart,
+        branches: activeBranch.branches,
+      });
     } else {
-      return getCurrentActiveNode(rest, match.branches);
+      return tree.set(moves[0].san, {
+        moves: activeBranch.moves,
+        sectionStart: activeBranch.sectionStart,
+        branches: activeBranch.branches.set(moves[i].san, {
+          moves: moves.slice(i),
+          sectionStart: Math.floor((depth + i + 1) / 2),
+          branches: OrderedMap(),
+        }),
+      });
     }
-  } else {
-    return null;
   }
+
+  // Otherwise the moves were already full represented in the tree.
+  return tree;
 }
 
 class Controller {
@@ -92,7 +119,6 @@ class Controller {
 
   private subscribed: Array<() => void>;
   private internalMoveTree: ImmutableMap<string, MoveTree>;
-  public activeMoveNode: MoveTree | null;
 
   public constructor(initialPerspective?: 'white' | 'black') {
     this.subscribed = [];
@@ -100,7 +126,6 @@ class Controller {
     this.perspective = initialPerspective ?? 'white';
     this.chess = new Chess();
     this.internalMoveTree = ImmutableMap();
-    this.activeMoveNode = null;
   }
 
   public get moveTree() {
@@ -135,7 +160,6 @@ class Controller {
     this.cg?.set(this.calcCGConfig());
     const currentHistory = this.chess.history({ verbose: true });
     this.internalMoveTree = updateTree(currentHistory, this.internalMoveTree);
-    this.activeMoveNode = getCurrentActiveNode(currentHistory, this.internalMoveTree);
     this.onUpdate?.();
   };
 
@@ -168,34 +192,24 @@ class Controller {
 
   public stepBack = () => {
     this.chess.undo();
-    this.activeMoveNode = getCurrentActiveNode(this.chess.history({ verbose: true }), this.internalMoveTree);
+    const history = this.chess.history({ verbose: true });
+    const last = history.length > 0 ? history[history.length - 1] : undefined;;
     this.cg?.set(this.calcCGConfig());
     this.cg?.set({
-      lastMove: this.activeMoveNode ? [this.activeMoveNode.move.from, this.activeMoveNode.move.to] : undefined,
+      lastMove: last && [last.to, last.from],
     });
     this.onUpdate();
   };
   
   public canStepForward = () => {
-    return Boolean(
-      (this.activeMoveNode === null && this.internalMoveTree.size > 0) || (this.activeMoveNode && this.activeMoveNode.branches.size > 0)
-    );
+    return false; // TODO;
   };
 
   public stepForward = () => {
     if (!this.canStepForward()) {
       return;
     }
-
-    // Asserting this exists because canStepForward checks it.
-    const firstBranch: MoveTree = this.activeMoveNode === null ? 
-      this.internalMoveTree.valueSeq().first()! :
-      this.activeMoveNode.branches.valueSeq().first()!;
-
-    this.move(firstBranch.move.san);
-    this.cg?.set({
-      lastMove: this.activeMoveNode ? [this.activeMoveNode.move.from, this.activeMoveNode.move.to] : undefined,
-    });
+    // TODO;
   };
 
   public rewind = () => {
@@ -203,28 +217,7 @@ class Controller {
   };
 
   public fastForward = () => {
-    if (!this.canStepForward()) {
-      return;
-    }
-    
-    const innerChess = new Chess();
-    // Asserting this exists because canStepForward checks it.
-    let currentBranch: MoveTree = this.activeMoveNode === null ? 
-      this.internalMoveTree.valueSeq().first()! :
-      this.activeMoveNode.branches.valueSeq().first()!;
-
-    if (this.activeMoveNode !== null) {
-      // If there was an active node the starting point for reconstructing the pgn needs to use the current position
-      innerChess.load_pgn(this.chess.pgn());
-    }
-
-    innerChess.move(currentBranch.move);
-    while (currentBranch.branches.size > 0) {
-      currentBranch = currentBranch.branches.first()!;
-      innerChess.move(currentBranch.move);
-    }
-
-    this.setPgn(innerChess.pgn());
+    // TODO
   };
 
   public setPgn = (pgn: string, eraseHistory: boolean = false) => {
@@ -233,17 +226,17 @@ class Controller {
     if (eraseHistory) {
       this.internalMoveTree = updateTree(newHistory, ImmutableMap());
     }
-    this.activeMoveNode = getCurrentActiveNode(newHistory, this.internalMoveTree);
+    const history = this.chess.history({ verbose: true });
+    const last = history.length > 0 ? history[history.length - 1] : undefined;;
     this.cg?.set(this.calcCGConfig());
     this.cg?.set({
-      lastMove: this.activeMoveNode ? [this.activeMoveNode.move.from, this.activeMoveNode.move.to] : undefined,
+      lastMove: last && [last.to, last.from],
     })
     this.onUpdate?.();
   }
 
   public setFen = (fen: string, eraseHistory: boolean = false) => {
     this.chess.load(fen);
-    this.activeMoveNode = null;
     if (eraseHistory) {
       this.internalMoveTree = ImmutableMap();
     }
