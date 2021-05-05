@@ -4,23 +4,29 @@ import { useController, MoveTree } from '../controller';
 import { OrderedMap as ImmutableMap } from 'immutable';
 
 interface IMoveProps {
+  pgn: string;
   san: string;
-  active: boolean;
 }
-const MoveComponent: FC<IMoveProps> = ({ san, active }) => {
+const MoveComponent: FC<IMoveProps> = ({ san, pgn }) => {
+  const controller = useController();
+  const isActive = controller.pgn === pgn;
   return (
-    <button onClick={() => console.log('TODO')} className="btn p-0">
+    <button onClick={() => controller.setPgn(pgn)} className={`btn p-0${isActive ? ' btn-primary' : ''}`}>
       {san}
     </button>
   );
 };
 
-const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; }> = ({ moveNumber, white, black }) => {
+const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; }> = ({
+  moveNumber,
+  white,
+  black,
+}) => {
   return (
     <tr className="align-middle">
       <td>{moveNumber}.</td>
-      <td>{white ? <MoveComponent san={white.san} active={false} /> : '...'}</td>
-      <td>{black ? <MoveComponent san={black.san} active={false} /> : '...'}</td>
+      <td>{white ? <MoveComponent san={white.san} pgn={''} /> : '...'}</td>
+      <td>{black ? <MoveComponent san={black.san} pgn={''} /> : '...'}</td>
     </tr>
   );
 };
@@ -29,20 +35,23 @@ const Branches: FC<{ branches: ImmutableMap<string, MoveTree> }> = ({ branches }
   return branches.size === 0 ? null : (
     <tr>
       <td colSpan={3}>
-        <ul>{
-          branches.map((tree, san) => (
-            <li key={san}>
-              {tree.moves.map((move, i) => 
-                <React.Fragment key={`${move}-${i}`}>
-                  {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + Math.floor(i / 2)}.</span>}
-                  {move.color === 'b' && i === 0 && <span>...</span>}
-                  <span>{move.san}</span>
-                </React.Fragment>
-              )}
-              <Branches branches={tree.branches} />
-            </li>
-          )).valueSeq().toArray()
-        }</ul>
+        <ul>
+          {branches
+            .map((tree, san) => (
+              <li key={san}>
+                {tree.moves.map((move, i) => (
+                  <React.Fragment key={`${move}-${i}`}>
+                    {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + Math.floor(i / 2)}.</span>}
+                    {move.color === 'b' && i === 0 && <span>...</span>}
+                    <span>{move.san}</span>
+                  </React.Fragment>
+                ))}
+                <Branches branches={tree.branches} />
+              </li>
+            ))
+            .valueSeq()
+            .toArray()}
+        </ul>
       </td>
     </tr>
   );
@@ -56,9 +65,7 @@ function pair(arr: Move[]): Array<[Move | undefined, Move | undefined]> {
   }
 
   if (arr.length === 1) {
-    return [
-      arr[0].color === 'w' ? [arr[0], undefined] : [undefined, arr[0]],
-    ];
+    return [arr[0].color === 'w' ? [arr[0], undefined] : [undefined, arr[0]]];
   }
 
   let i = 0;
@@ -67,8 +74,8 @@ function pair(arr: Move[]): Array<[Move | undefined, Move | undefined]> {
     i++;
   }
 
-  for(;i < arr.length - 1; i+= 2) {
-    next.push([arr[i], arr[i+1]]);
+  for (; i < arr.length - 1; i += 2) {
+    next.push([arr[i], arr[i + 1]]);
   }
 
   if (arr[arr.length - 1].color === 'w') {
@@ -87,7 +94,7 @@ const MovesTable: FC<{ moveTree: ImmutableMap<string, MoveTree> }> = ({ moveTree
     }
 
     let chunk: MoveTree | undefined = moveTree.first();
-    while(chunk) {
+    while (chunk) {
       arr.push([chunk, chunk.branches.rest()]);
       chunk = chunk.branches.first();
     }
@@ -95,8 +102,8 @@ const MovesTable: FC<{ moveTree: ImmutableMap<string, MoveTree> }> = ({ moveTree
   }, [moveTree]);
   return (
     <table className="table table-borderless table-sm m-0">
-      <tbody>{
-        chunks.map(([chunk, branches]) => (
+      <tbody>
+        {chunks.map(([chunk, branches]) => (
           <React.Fragment key={`${chunk.moves[0].san}-${chunk.sectionStart}`}>
             {pair(chunk.moves).map(([white, black], i) => {
               return <MoveTableRow key={i} white={white} black={black} moveNumber={chunk.sectionStart + i} />;

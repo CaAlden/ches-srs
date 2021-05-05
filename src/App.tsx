@@ -1,36 +1,23 @@
 import React from 'react';
-import Board from './board/Board';
-import Navigator from './navigator';
-
-import TabsContainer from './input/Tabs';
-import FENInput from './input/FENInput';
-import PGNInput from './input/PGNInput';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
+import AboutPage from './AboutPage';
+import DashboardPage from './DashboardPage';
+import InputPage from './OpeningInputPage';
 
 export default function App() {
   return (
-    <div className="container-fluid">
-      <div className="row g-3 justify-content-center">
-        <div className="col-8 g-3">
-          <div className="d-flex justify-content-end p-3 col-12">
-            <Board />
-          </div>
-          <div className="col-12 p-3 d-flex justify-content-end">
-            <TabsContainer tabs={[
-                ['FEN Input', <FENInput />],
-                ['PGN Input', <PGNInput />],
-              ]}
-            />
-          </div>
-        </div>
-        <div className="p-3 col-4 d-flex">
-          <Navigator>
-            <div className="btn-group">
-              <button className="btn btn-primary">Ok</button>
-              <button className="btn btn-danger">Wrong</button>
-            </div>
-          </Navigator>
-        </div>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Switch>
+        <Route path="/input">
+          <InputPage />
+        </Route>
+        <Route path="/about">
+          <AboutPage />
+        </Route>
+        <Route path="/">
+          <DashboardPage />
+        </Route>
+      </Switch>
+    </BrowserRouter>
   );
 }
