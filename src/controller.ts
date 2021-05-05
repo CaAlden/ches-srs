@@ -128,6 +128,37 @@ class Controller {
     this.internalMoveTree = ImmutableMap();
   }
 
+  public getActiveLine = (): Move[] => {
+    const currentLineBase = this.getCurrentHistory();
+    // Walk through the history as far as we can
+    const line: Move[] = [];
+    let activeBranch: MoveTree | undefined = currentLineBase.length === 0 ? this.internalMoveTree.first() : this.internalMoveTree.get(currentLineBase[0].san);
+
+    if (activeBranch === undefined) {
+      return line;
+    }
+
+    // Keep track of the current point in the move list.
+    let cI = 0;
+    while(activeBranch !== undefined) {
+      // ASSUMPTION: activeBranch.moves is non-empty
+      if (cI + activeBranch.moves.length < currentLineBase.length) {
+        line.push(...activeBranch.moves);
+        cI += activeBranch.moves.length;
+        activeBranch = activeBranch.branches.get(currentLineBase[cI].san);
+      } else {
+        // Otherwise loop to the end of the current branches
+        while(activeBranch !== undefined) {
+          line.push(...activeBranch.moves); 
+          activeBranch = activeBranch.branches.first();
+        }
+        return line;
+      }
+    }
+
+    throw new Error('The chess.js history was somehow longer than the internal move tree. This should never be the case');
+  };
+
   public get moveTree() {
     return this.internalMoveTree;
   }
@@ -206,22 +237,26 @@ class Controller {
   };
   
   public canStepForward = () => {
-    return false; // TODO;
+    return this.getActiveLine().length > this.chess.history().length;
   };
 
   public stepForward = () => {
-    if (!this.canStepForward()) {
-      return;
+    const line = this.getActiveLine();
+    const history = this.getCurrentHistory();
+    if (line.length > history.length) {
+      this.move(line[history.length]);
     }
-    // TODO;
+  };
+
+  public fastForward = () => {
+    const line = this.getActiveLine();
+    for (let i = this.chess.history().length; i < line.length; i++) {
+      this.move(line[i]);
+    }
   };
 
   public rewind = () => {
     this.setPgn('');
-  };
-
-  public fastForward = () => {
-    // TODO
   };
 
   public setPgn = (pgn: string, eraseHistory: boolean = false) => {
