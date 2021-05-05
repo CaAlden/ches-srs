@@ -1,26 +1,4 @@
 import React, { FC, ReactElement, useState } from 'react';
-import Button from '../../ui/Button';
-
-import './index.css';
-
-interface ITabButton {
-  label: string;
-  setSelected: () => void;
-  selected: boolean;
-}
-
-const TabButton: FC<ITabButton> = ({ label, setSelected, selected }) => {
-  return (
-    <Button
-      onClick={setSelected}
-      style={{
-        background: selected ? '#aaa' : undefined,
-        borderBottom: `3px solid ${selected ? 'black' : 'transparent'}`,
-      }}>
-      {label}
-    </Button>
-  );
-};
 
 interface ITabContainerProps {
   tabs: Array<[string, ReactElement]>;
@@ -31,18 +9,26 @@ const TabsContainer: FC<ITabContainerProps> = ({ tabs }) => {
 
   const [, selectedElm] = tabs.find(([label]) => label === selectedLabel) ?? ['undefined', 'TODO'];
   return (
-    <div className="tab-container">
-      <div className="tab-button-container">
-        {tabs.map(([label]) => (
-          <TabButton
-            selected={label === selectedLabel}
-            key={label}
-            label={label}
-            setSelected={() => setSelectedLabel(label)}
-          />
-        ))}
+    <div className="d-flex flex-grow-1" style={{ maxWidth: '600px' }}>
+      <div className="w-100">
+        <div className="col-12 p-1">
+          <ul className="nav nav-tabs">
+            {tabs.map(([label]) => (
+              <li key={label} className="nav-item">
+                <a
+                  className={`nav-link${selectedLabel === label ? ' active' : ''}`}
+                  href="#"
+                  onClick={() => setSelectedLabel(label)}>
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="col-12 p-0">
+          {selectedElm}
+        </div>
       </div>
-      <div className="tab">{selectedElm}</div>
     </div>
   );
 };

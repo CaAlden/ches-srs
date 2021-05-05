@@ -2,10 +2,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { getOrElse } from 'fp-ts/lib/Either';
 import React, { useEffect, useState } from 'react';
 import { useController } from '../controller';
-import Button from '../ui/Button';
 import { PGNCodec } from './codecs';
-
-import './index.css';
 
 export default function PGNInput() {
   const controller = useController();
@@ -16,22 +13,18 @@ export default function PGNInput() {
   }, [controller.pgn]);
 
   return (
-    <div className="input-container">
+    <div className="col-12">
       <textarea
-        className="text-input"
+        className="w-100"
         placeholder="Input PGN"
+        style={{ resize: 'none' }}
         value={pgn}
         onChange={e => setPgn(e.target.value)}
         spellCheck={false}
       />
-      <div className="submit-container">
-        <Button
-          className="submit-btn"
-          style={{
-            padding: '5px',
-            background: 'blue',
-            color: 'white',
-          }}
+      <div className="d-flex justify-content-end p-2">
+        <button
+          className="btn btn-primary"
           onClick={() =>
             pipe(
               PGNCodec.decode(pgn),
@@ -40,7 +33,7 @@ export default function PGNInput() {
             )
           }>
           Load
-        </Button>
+        </button>
       </div>
     </div>
   );

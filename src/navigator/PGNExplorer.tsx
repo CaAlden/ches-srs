@@ -2,9 +2,6 @@ import { Move } from 'chess.js';
 import React, { FC, useMemo } from 'react';
 import { useController, MoveTree } from '../controller';
 import { OrderedMap as ImmutableMap } from 'immutable';
-import Button from '../ui/Button';
-
-import './index.css';
 
 interface IMoveProps {
   san: string;
@@ -12,38 +9,42 @@ interface IMoveProps {
 }
 const MoveComponent: FC<IMoveProps> = ({ san, active }) => {
   return (
-    <Button onClick={() => console.log('TODO')} style={{ fontWeight: active ? 'bold' : 'normal' }}>
+    <button onClick={() => console.log('TODO')} className="btn p-0">
       {san}
-    </Button>
+    </button>
   );
 };
 
 const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; }> = ({ moveNumber, white, black }) => {
   return (
-    <div className="pgn-explorer-row">
-      <span>{moveNumber}.</span>
-      <span>{white ? <MoveComponent san={white.san} active={false} /> : '...'}</span>
-      <span>{black ? <MoveComponent san={black.san} active={false} /> : '...'}</span>
-    </div>
+    <tr className="align-middle">
+      <td>{moveNumber}.</td>
+      <td>{white ? <MoveComponent san={white.san} active={false} /> : '...'}</td>
+      <td>{black ? <MoveComponent san={black.san} active={false} /> : '...'}</td>
+    </tr>
   );
 };
 
 const Branches: FC<{ branches: ImmutableMap<string, MoveTree> }> = ({ branches }) => {
   return branches.size === 0 ? null : (
-    <ul className="branches">{
-      branches.map((tree, san) => (
-        <li className="branch" key={san}>
-          {tree.moves.map((move, i) => 
-            <React.Fragment key={move.san}>
-              {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + Math.floor(i / 2)}.</span>}
-              {move.color === 'b' && i === 0 && <span>...</span>}
-              <span>{move.san}</span>
-            </React.Fragment>
-          )}
-          <Branches branches={tree.branches} />
-        </li>
-      )).valueSeq().toArray()
-    }</ul>
+    <tr>
+      <td colSpan={3}>
+        <ul>{
+          branches.map((tree, san) => (
+            <li key={san}>
+              {tree.moves.map((move, i) => 
+                <React.Fragment key={`${move}-${i}`}>
+                  {(move.color === 'w' || i === 0) && <span>{tree.sectionStart + Math.floor(i / 2)}.</span>}
+                  {move.color === 'b' && i === 0 && <span>...</span>}
+                  <span>{move.san}</span>
+                </React.Fragment>
+              )}
+              <Branches branches={tree.branches} />
+            </li>
+          )).valueSeq().toArray()
+        }</ul>
+      </td>
+    </tr>
   );
 };
 
@@ -93,17 +94,19 @@ const MovesTable: FC<{ moveTree: ImmutableMap<string, MoveTree> }> = ({ moveTree
     return arr;
   }, [moveTree]);
   return (
-    <div className="pgn-explorer">{
-      chunks.map(([chunk, branches]) => (
-        <React.Fragment key={`${chunk.moves[0].san}-${chunk.sectionStart}`}>
-          {pair(chunk.moves).map(([white, black], i) => {
-            return <MoveTableRow key={i} white={white} black={black} moveNumber={chunk.sectionStart + i} />;
-          })}
-          {branches && <Branches branches={branches} />}
-        </React.Fragment>
-      ))}
-      <Branches branches={moveTree.rest()} />
-    </div>
+    <table className="table table-borderless table-sm m-0">
+      <tbody>{
+        chunks.map(([chunk, branches]) => (
+          <React.Fragment key={`${chunk.moves[0].san}-${chunk.sectionStart}`}>
+            {pair(chunk.moves).map(([white, black], i) => {
+              return <MoveTableRow key={i} white={white} black={black} moveNumber={chunk.sectionStart + i} />;
+            })}
+            {branches && <Branches branches={branches} />}
+          </React.Fragment>
+        ))}
+        <Branches branches={moveTree.rest()} />
+      </tbody>
+    </table>
   );
 };
 

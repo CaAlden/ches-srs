@@ -1,7 +1,5 @@
 import React from 'react';
 
-import "./index.css";
-
 export default function PlayerInfo() {
   return (
     <div className="player-info">

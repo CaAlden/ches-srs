@@ -4,5 +4,11 @@ import './chessground.css';
 
 export default function Board() {
   const controller = useController();
-  return <div id="chessboard" ref={controller.refCallback} />;
+  return (
+    <div className="card chessboard-positioner">
+      <div className="chessboard-container">
+        <div id="chessboard" ref={controller.refCallback} />
+      </div>
+    </div>
+  );
 }

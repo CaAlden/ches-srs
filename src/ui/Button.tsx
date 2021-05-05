@@ -1,7 +1,5 @@
 import React, { FC } from 'react';
 
-import './button.css';
-
 interface IButtonProps {
   disabled?: boolean;
   onClick?: () => void;

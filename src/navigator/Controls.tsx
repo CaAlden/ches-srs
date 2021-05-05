@@ -1,8 +1,5 @@
 import React, { FC } from 'react';
 import { useController } from '../controller';
-import Button from '../ui/Button';
-
-import './index.css';
 
 interface IButtonProps {
   onClick: () => void;
@@ -10,32 +7,32 @@ interface IButtonProps {
 }
 const ControlButton: FC<IButtonProps> = ({ onClick, children, disabled }) => {
   return (
-    <Button disabled={false} aria-disabled={disabled} onClick={onClick} className="control-btn">
+    <button disabled={false} aria-disabled={disabled} onClick={onClick} className="btn btn-outline-primary btn-sm">
       {children}
-    </Button>
+    </button>
   );
 };
 
 export default function Controls() {
   const controller = useController();
   return (
-    <div className="controls-container">
+    <div className="btn-group flex-grow-1" role="group">
       <ControlButton
         onClick={() => {
           controller.flipPerspective();
         }}>
-        🔄
+        <i className="bi-arrow-repeat" />
       </ControlButton>
       <ControlButton
         onClick={() => {
           // Set the game to blank.
           controller.rewind();
         }}>
-        ⏪
+        <i className="bi-skip-backward-fill" />
       </ControlButton>
-      <ControlButton onClick={() => controller.stepBack()}>⬅️</ControlButton>
-      <ControlButton onClick={() => controller.stepForward()}>➡️</ControlButton>
-      <ControlButton onClick={() => controller.fastForward()}>⏩</ControlButton>
+      <ControlButton onClick={() => controller.stepBack()}><i className="bi-skip-start-fill" /></ControlButton>
+      <ControlButton onClick={() => controller.stepForward()}><i className="bi-skip-end-fill" /></ControlButton>
+      <ControlButton onClick={() => controller.fastForward()}><i className="bi-skip-forward-fill" /></ControlButton>
     </div>
   );
 }

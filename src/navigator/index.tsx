@@ -1,17 +1,25 @@
-import React from 'react';
+import React, {Children, FC} from 'react';
 import Controls from './Controls';
 import PGNExplorer from './PGNExplorer';
-import PlayerInfo from './PlayerInfo';
 
-import "./index.css";
-
-export default function Navigator() {
+const Navigator: FC = ({ children }) => {
   return (
-    <div className="navigator-container">
-      <PlayerInfo />
-      <Controls />
-      <PGNExplorer />
-      <PlayerInfo />
+    <div className="card col-6" style={{ maxHeight: '500px', minWidth: '230px' }} >
+      <ul className="list-group list-group-flush h-100">
+        <li className="list-group-item d-flex">
+          <Controls />
+        </li>
+        <li className="list-group-item flex-grow-1" style={{ overflowY: 'auto'}}>
+          <PGNExplorer />
+        </li>
+        {Children.map(children, (child, i) => (
+          <li className="list-group-item" key={i}>
+            {child}
+          </li>
+        ))}
+      </ul>
     </div>
   );
-}
+};
+
+export default Navigator;
