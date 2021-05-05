@@ -163,6 +163,10 @@ class Controller {
     this.onUpdate?.();
   };
 
+  public getCurrentHistory = (): Move[] => {
+    return this.chess.history({ verbose: true });
+  }
+
   private calcCGConfig = (): Config => ({
     fen: this.fen,
     orientation: this.perspective,
