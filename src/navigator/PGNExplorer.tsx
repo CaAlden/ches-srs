@@ -9,9 +9,8 @@ interface IMoveProps {
 }
 const MoveComponent: FC<IMoveProps> = ({ san, pgn }) => {
   const controller = useController();
-  const isActive = controller.pgn === pgn;
   return (
-    <button onClick={() => controller.setPgn(pgn)} className={`btn p-0${isActive ? ' btn-primary' : ''}`}>
+    <button onClick={() => controller.setPgn(pgn)} className="btn p-0">
       {san}
     </button>
   );

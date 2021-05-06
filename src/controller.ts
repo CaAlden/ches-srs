@@ -186,8 +186,18 @@ class Controller {
     };
   };
 
-  private move = (m: string | ShortMove | Move) => {
-    this.chess.move(m);
+  public move = (m: string | ShortMove | Move) => {
+    this.makeMoves([m]);
+  };
+
+  public makeMoves = (moves: Array<string | ShortMove | Move>, clearHistory: boolean = false) => {
+    if (clearHistory) {
+      this.chess.load_pgn('');
+    }
+
+    for (let m of moves) {
+      this.chess.move(m);
+    }
     this.cg?.set(this.calcCGConfig());
     const currentHistory = this.chess.history({ verbose: true });
     this.internalMoveTree = updateTree(currentHistory, this.internalMoveTree);
@@ -250,9 +260,7 @@ class Controller {
 
   public fastForward = () => {
     const line = this.getActiveLine();
-    for (let i = this.chess.history().length; i < line.length; i++) {
-      this.move(line[i]);
-    }
+    this.makeMoves(line.slice(this.chess.history().length));
   };
 
   public rewind = () => {
