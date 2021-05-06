@@ -6,8 +6,11 @@ import Navigator from './navigator';
 import TabsContainer from './input/Tabs';
 import FENInput from './input/FENInput';
 import PGNInput from './input/PGNInput';
+import {useRouteMatch} from 'react-router';
 
 const InputPage = () => {
+  const route = useRouteMatch<{ id: string }>({ path: '/opening/:id'});
+  const isNew = Boolean(route?.params.id === 'new');
   return (
     <Page title="New Opening Input">
       <div className="col-8 g-3">
@@ -24,9 +27,16 @@ const InputPage = () => {
       </div>
       <div className="p-3 col-4 d-flex">
         <Navigator>
-          <div className="btn-group">
-            <button className="btn btn-primary">Ok</button>
-            <button className="btn btn-danger">Wrong</button>
+          <div className="btn-group justify-content-center flex-grow-1">
+            {isNew ? (
+              <button className="btn btn-primary">Save</button>
+            ) : (
+              <>
+                <button className="btn btn-sm btn-primary">Save</button>
+                <button className="btn btn-sm btn-outline-primary">Revert</button>
+                <button className="btn btn-sm btn-outline-danger">Delete</button>
+              </>
+            )}
           </div>
         </Navigator>
       </div>

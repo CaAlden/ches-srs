@@ -13,7 +13,7 @@ const Navigator: FC = ({ children }) => {
           <PGNExplorer />
         </li>
         {Children.map(children, (child, i) => (
-          <li className="list-group-item" key={i}>
+          <li className="list-group-item d-flex" key={i}>
             {child}
           </li>
         ))}

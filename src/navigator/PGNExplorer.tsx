@@ -86,7 +86,6 @@ function pair(arr: Move[]): Array<[Move | undefined, Move | undefined]> {
 }
 
 const MovesTable: FC<{ moveTree: ImmutableMap<string, MoveTree> }> = ({ moveTree }) => {
-  console.log(moveTree);
   const chunks = useMemo((): Array<[MoveTree, ImmutableMap<string, MoveTree>]> => {
     const arr: Array<[MoveTree, ImmutableMap<string, MoveTree>]> = [];
     if (!moveTree) {

@@ -14,25 +14,25 @@ const Page: FC<IProps> = ({ title, children }) => {
     <div className="container-fluid p-0">
       <nav className="navbar navbar-light" style={{ background: '#e3f2fd' }}>
         <div className="container-fluid">
-          <a className="navbar-brand" href="/">ChesSRS</a>
+          <Link className="navbar-brand" to="/">ChesSRS</Link>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav">
               <li className="nav-item">
-                <Link to="/">
-                  <a className={`nav-link${active.path === '/' ? ' active' : ''}`} href="/">Home</a>
+                <Link to="/" className={`nav-link${active.path === '/' ? ' active' : ''}`}>
+                  Home
                 </Link>
               </li>
               <li className="nav-item">
-                <Link to="/input">
-                  <a className={`nav-link${active.path === '/input' ? ' active' : ''}`} href="/input">Opening Editor</a>
+                <Link to="/opening/new" className={`nav-link${active.path.startsWith('/opening') ? ' active' : ''}`}>
+                  Opening Editor
                 </Link>
               </li>
               <li className="nav-item">
-                <Link to="/about">
-                  <a className={`nav-link${active.path === '/about' ? ' active' : ''}`} href="/about">About</a>
+                <Link to="/about" className={`nav-link${active.path === '/about' ? ' active' : ''}`}>
+                  About
                 </Link>
               </li>
             </ul>

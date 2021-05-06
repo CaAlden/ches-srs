@@ -8,7 +8,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Switch>
-        <Route path="/input">
+        <Route path="/opening/:id">
           <InputPage />
         </Route>
         <Route path="/about">

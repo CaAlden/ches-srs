@@ -1,4 +1,5 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import Page from './Page';
 
 interface IOpening {
@@ -47,10 +48,10 @@ const openings: IOpening[] = [
   },
   {
     id: '6',
-    name: "Queen's Gambit",
-    color: 'w',
+    name: "Caro-Kann Defense",
+    color: 'b',
     items: [],
-    pendingReviews: 6,
+    pendingReviews: 0,
   },
 ];
 
@@ -58,7 +59,12 @@ const DashboardPage = () => {
   return (
     <Page title="Dashboard">
       <div className="col-8 p-3">
-        <p>Hello, you have {openings.reduce((acc, op) => acc + op.pendingReviews, 0)} pending review(s)</p>
+        <div className="col-12 d-flex justify-content-between">
+          <p>Hello, you have {openings.reduce((acc, op) => acc + op.pendingReviews, 0)} pending review(s)</p>
+          <Link to="/opening/new" className="btn btn-outline-success">
+            Add New Opening
+          </Link>
+        </div>
         <table className="table table-hover align-middle m-0">
           <thead>
             <tr>
@@ -80,8 +86,8 @@ const DashboardPage = () => {
                 </td>
                 <td>
                   <div className="d-flex gap-2">
-                    <button className="btn btn-outline-primary">View Lines</button>
-                    <button className={`d-flex gap-1 btn btn-primary${op.pendingReviews > 0 ? '' : ' disabled'}`}>
+                    <button className="btn btn-outline-primary btn-sm">View</button>
+                    <button className={`d-flex gap-1 btn btn-sm btn-primary${op.pendingReviews > 0 ? '' : ' disabled'}`}>
                       Study
                       {op.pendingReviews > 0 && (
                         <span className="badge bg-danger d-flex align-items-center">{op.pendingReviews}</span>
