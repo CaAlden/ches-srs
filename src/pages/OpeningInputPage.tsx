@@ -1,11 +1,11 @@
 import React from 'react';
 import Page from './Page';
-import Board from './board/Board';
-import Navigator from './navigator';
+import Board from '../board/Board';
+import Navigator from '../navigator';
 
-import TabsContainer from './input/Tabs';
-import FENInput from './input/FENInput';
-import PGNInput from './input/PGNInput';
+import TabsContainer from '../input/Tabs';
+import FENInput from '../input/FENInput';
+import PGNInput from '../input/PGNInput';
 import {useRouteMatch} from 'react-router';
 
 const InputPage = () => {

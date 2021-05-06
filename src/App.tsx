@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import AboutPage from './AboutPage';
-import DashboardPage from './DashboardPage';
-import InputPage from './OpeningInputPage';
+import AboutPage from './pages/AboutPage';
+import DashboardPage from './pages/DashboardPage';
+import InputPage from './pages/OpeningInputPage';
 
 export default function App() {
   return (
