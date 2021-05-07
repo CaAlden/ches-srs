@@ -1,18 +1,60 @@
 import { Move } from 'chess.js';
-import React, { FC, useMemo } from 'react';
+import { Overlay, Popover, PopoverContent } from 'react-bootstrap';
+import React, { FC, useMemo, useRef, useState } from 'react';
 import { useController, MoveTree } from '../controller';
 import { List, OrderedMap as ImmutableMap, is } from 'immutable';
 
 interface IMoveProps {
   history: List<Move>;
   san: string;
+  id: string;
+  inline?: boolean;
 }
-const MoveComponent: FC<IMoveProps> = ({ san, history }) => {
+
+const MoveComponent: FC<IMoveProps> = ({ san, history, id, inline = false }) => {
   const controller = useController();
+  const ref = useRef<null | HTMLDivElement>(null);
+  const [target, setTarget] = useState<EventTarget | null>(null);
+  const [showPopover, setShowPopover] = useState(false);
   return (
-    <button onClick={() => controller.makeMoves(history.toArray(), true)} className="btn p-0 w-100">
-      {san}
-    </button>
+    <div ref={ref}>
+      <button
+        onContextMenu={e => {
+          setTarget(e.target);
+          e.preventDefault();
+          setShowPopover(s => !s);
+        }}
+        onClick={() => {
+          controller.makeMoves(history.toArray(), true);
+        }}
+        className={`btn p-0 ${inline ? 'mx-1' : 'w-100'}`}>
+        {san}
+      </button>
+      <Overlay
+        target={target as any}
+        placement="bottom"
+        rootClose
+        onHide={() => setShowPopover(false)}
+        container={ref.current}
+        show={showPopover}>
+        <Popover id={id} className="p-0">
+          <PopoverContent>
+            <ul className="list-group list-group-flush p-0">
+              <li className="list-group-item p-0">
+                <button
+                  onClick={() => {
+                    controller.removeLine(history.toArray());
+                    setShowPopover(false);
+                  }}
+                  className="btn btn-sm btn-outline-danger w-100">
+                  Remove Line
+                </button>
+              </li>
+            </ul>
+          </PopoverContent>
+        </Popover>
+      </Overlay>
+    </div>
   );
 };
 
@@ -25,15 +67,21 @@ const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; base: L
   const controller = useController();
   const currentHistory = List(controller.getCurrentHistory());
   const whiteMoveHistory = white ? base.push(white) : base;
+  const whiteKey = whiteMoveHistory.map(({ san }) => san).join('-');
   const blackMoveHistory = white && black ? base.push(white, black) : black ? base.push(black) : base;
+  const blackKey = blackMoveHistory.map(({ san }) => san).join('-');
   return (
     <tr className="align-middle">
       <td>{moveNumber}.</td>
       <td className={is(whiteMoveHistory, currentHistory) ? 'table-active' : ''}>
-        {white ? <MoveComponent san={white.san} history={base.push(white)} /> : '...'}
+        {white ? <MoveComponent id={whiteKey} san={white.san} history={base.push(white)} /> : '...'}
       </td>
       <td className={is(blackMoveHistory, currentHistory) ? 'table-active' : ''}>
-        {black ? <MoveComponent san={black.san} history={white ? base.push(white, black) : base.push(black)} /> : '...'}
+        {black ? (
+          <MoveComponent id={blackKey} san={black.san} history={white ? base.push(white, black) : base.push(black)} />
+        ) : (
+          '...'
+        )}
       </td>
     </tr>
   );
@@ -51,7 +99,9 @@ const Branches: FC<{ branches: ImmutableMap<string, MoveTree>; previousMoves: Li
             .map((tree, san) => {
               let innerMoves = previousMoves;
               return (
-                <li key={san} className="list-group-item list-group-item-action list-group-item-info">
+                <li
+                  key={san}
+                  className="d-inline-flex align-items-center flex-wrap list-group-item list-group-item-action list-group-item-info">
                   {tree.moves.map((move, i) => {
                     const elm = (
                       <React.Fragment key={`${move}-${i}`}>
@@ -59,7 +109,12 @@ const Branches: FC<{ branches: ImmutableMap<string, MoveTree>; previousMoves: Li
                           <span className="mr-1">{tree.sectionStart + Math.floor(i / 2)}.</span>
                         )}
                         {move.color === 'b' && i === 0 && <span className="mx-1">...</span>}
-                        <MoveComponent san={move.san} history={innerMoves.push(move)} />
+                        <MoveComponent
+                          inline
+                          id={innerMoves.map(({ san }) => san).join('-')}
+                          san={move.san}
+                          history={innerMoves.push(move)}
+                        />
                       </React.Fragment>
                     );
                     innerMoves = innerMoves.push(move);

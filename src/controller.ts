@@ -112,6 +112,41 @@ export function updateTree(
   return tree;
 }
 
+export function removeLine(line: Move[], tree: ImmutableMap<string, MoveTree>): ImmutableMap<string, MoveTree> {
+  if (line.length < 1) {
+    return ImmutableMap();
+  }
+
+  const branch = tree.get(line[0].san);
+  if (branch === undefined) {
+    // If the move isn't in the tree then just return the tree.
+    return tree;
+  }
+
+  let i = 0;
+  for (let move of branch.moves) {
+    if (i >= line.length - 1 && areMovesEqual(move, line[i])) {
+      // The move was part of this line so remove the entire branch.
+      return tree.remove(line[0].san);
+    }
+    if (!areMovesEqual(move, line[i])) {
+      // The branch doesn't exist in the tree.
+      return tree;
+    }
+    i++;
+  }
+
+  const subBranches = removeLine(line.slice(i), branch.branches);
+  return tree.set(line[0].san, subBranches.size === 1 ? {
+    ...branch,
+    moves: [...branch.moves, ...(subBranches.first<MoveTree | undefined>()?.moves ?? [])],
+    branches: ImmutableMap(),
+  } : {
+    ...branch,
+    branches: removeLine(line.slice(i), branch.branches),
+  });
+}
+
 class Controller {
   private cg: ChessgroundApi | null;
   private chess: ChessInstance;
@@ -229,6 +264,31 @@ class Controller {
       },
     },
   });
+
+  public removeLine = (line: Move[]) => {
+    this.internalMoveTree = removeLine(line, this.internalMoveTree);
+    // Reset chess
+    let branches = this.internalMoveTree;
+    let i = 0;
+    
+    let newHistory: Move[] = [];
+    while (branches !== undefined && i < line.length) {
+      const branch = branches.get(line[i].san);
+      if (branch === undefined) {
+        break;
+      }
+      for (let move of branch.moves) {
+        if (areMovesEqual(move, line[i])) {
+          newHistory.push(move);
+        }
+        i++;
+      }
+      newHistory.push(...branch.moves);
+      branches = branch.branches;
+    }
+
+    this.makeMoves(newHistory, true);
+  };
 
   public flipPerspective = () => {
     this.perspective = this.perspective === 'white' ? 'black' : 'white';
