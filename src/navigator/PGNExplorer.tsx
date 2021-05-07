@@ -80,17 +80,18 @@ const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; base: L
   const whiteKey = whiteMoveHistory.map(({ san }) => san).join('-');
   const blackMoveHistory = white && black ? base.push(white, black) : black ? base.push(black) : base;
   const blackKey = blackMoveHistory.map(({ san }) => san).join('-');
+  const dots = <span className="d-flex justify-content-center">...</span>
   return (
     <tr className="align-middle">
       <td>{moveNumber}.</td>
       <td className={is(whiteMoveHistory, currentHistory) ? 'table-active' : ''}>
-        {white ? <MoveComponent id={whiteKey} san={white.san} history={base.push(white)} /> : '...'}
+        {white ? <MoveComponent id={whiteKey} san={white.san} history={base.push(white)} /> : dots}
       </td>
       <td className={is(blackMoveHistory, currentHistory) ? 'table-active' : ''}>
         {black ? (
           <MoveComponent id={blackKey} san={black.san} history={white ? base.push(white, black) : base.push(black)} />
         ) : (
-          '...'
+          dots
         )}
       </td>
     </tr>
