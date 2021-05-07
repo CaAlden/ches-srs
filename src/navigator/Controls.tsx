@@ -1,13 +1,48 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect, useRef } from 'react';
 import { useController } from '../controller';
 
 interface IButtonProps {
   onClick: () => void;
   disabled?: boolean;
+  keyCode?: string;
+  shift?: boolean;
 }
-const ControlButton: FC<IButtonProps> = ({ onClick, children, disabled }) => {
+
+const useIsMounted = () => {
+  const isMountedRef = useRef(false);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  return isMountedRef;
+};
+
+const ControlButton: FC<IButtonProps> = ({ onClick, children, disabled, keyCode, shift }) => {
+  const btnRef = useRef<null | HTMLButtonElement>(null);
+  const isMounted = useIsMounted();
+
+  useEffect(() => {
+    const keyListener = (e: KeyboardEvent) => {
+      if (isMounted.current && !disabled) {
+        if (e.code === keyCode && (!shift || e.shiftKey)) {
+          e.preventDefault();
+          onClick();
+          btnRef.current?.focus();
+        }
+      }
+    };
+    addEventListener('keydown', keyListener);
+    return () => {
+      removeEventListener('keydown', keyListener);
+    };
+  }, [isMounted, keyCode, disabled, shift]);
+
   return (
     <button
+      ref={btnRef}
       disabled={false}
       aria-disabled={disabled}
       onClick={onClick}
@@ -24,6 +59,7 @@ export default function Controls() {
   return (
     <div className="btn-group flex-grow-1" role="group">
       <ControlButton
+        keyCode="KeyF"
         onClick={() => {
           controller.flipPerspective();
         }}>
@@ -31,19 +67,21 @@ export default function Controls() {
       </ControlButton>
       <ControlButton
         disabled={!canGoBack}
+        shift
+        keyCode="ArrowLeft"
         onClick={() => {
           // Set the game to blank.
           controller.rewind();
         }}>
         <i className="bi-skip-backward-fill" />
       </ControlButton>
-      <ControlButton disabled={!canGoBack} onClick={() => controller.stepBack()}>
+      <ControlButton keyCode="ArrowLeft" disabled={!canGoBack} onClick={() => controller.stepBack()}>
         <i className="bi-skip-start-fill" />
       </ControlButton>
-      <ControlButton disabled={!canStepForward} onClick={() => controller.stepForward()}>
+      <ControlButton keyCode="ArrowRight" disabled={!canStepForward} onClick={() => controller.stepForward()}>
         <i className="bi-skip-end-fill" />
       </ControlButton>
-      <ControlButton disabled={!canStepForward} onClick={() => controller.fastForward()}>
+      <ControlButton shift keyCode="ArrowRight" disabled={!canStepForward} onClick={() => controller.fastForward()}>
         <i className="bi-skip-forward-fill" />
       </ControlButton>
     </div>
