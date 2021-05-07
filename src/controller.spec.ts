@@ -1,4 +1,4 @@
-import { updateTree, MoveTree, removeLine } from './controller';
+import { updateTree, MoveTree, removeLine, removeAfter } from './controller';
 import { Chess } from 'chess.js';
 import { OrderedMap as ImmutableMap } from 'immutable';
 
@@ -285,5 +285,125 @@ describe('removeLine', () => {
 
     expect(sub1).not.toBeUndefined();
     expect(sub2).not.toBeUndefined();
+  });
+});
+
+describe('removeAfter', () => {
+  it('returns an empty tree when the line is empty', () => {
+    const chess = new Chess();
+    chess.move('e4');
+    chess.move('e5');
+    chess.move('Nc3');
+    const start = updateTree(chess.history({ verbose: true }), ImmutableMap());
+
+    expect(start.size).toBe(1);
+    const mainline = start.get('e4');
+    expect(mainline).not.toBeUndefined();
+    expect(mainline?.moves.map(({ san }) => san)).toEqual([
+      'e4',
+      'e5',
+      'Nc3',
+    ]);
+
+    const removed = removeAfter([], start);
+
+    expect(removed.isEmpty()).toBeTruthy();
+  });
+
+  it('returns the tree unaltered if the line does not exist in the tree', () => {
+    const chess = new Chess();
+    chess.move('e4');
+    chess.move('e5');
+    chess.move('Nc3');
+    const start = updateTree(chess.history({ verbose: true }), ImmutableMap());
+
+    expect(start.size).toBe(1);
+    const mainline = start.get('e4');
+    expect(mainline).not.toBeUndefined();
+    expect(mainline?.moves.map(({ san }) => san)).toEqual([
+      'e4',
+      'e5',
+      'Nc3',
+    ]);
+
+    const parallelChess = new Chess();
+    parallelChess.move('d4');
+    const removed = removeAfter(parallelChess.history({ verbose: true }), start);
+
+    expect(removed).toBe(start);
+  });
+
+  it('removes moves after the last move in a line', () => {
+    const chess = new Chess();
+    chess.move('e4');
+    chess.move('e5');
+    chess.move('Nc3');
+    chess.move('Nc6');
+
+    const start = updateTree(chess.history({ verbose: true }), ImmutableMap());
+    expect(start.get('e4')?.moves.map(({ san }) => san)).toEqual([
+      'e4',
+      'e5',
+      'Nc3',
+      'Nc6',
+    ]);
+
+    chess.undo();
+    const after = removeAfter(chess.history({ verbose: true }), start);
+
+    expect(after.get('e4')?.moves.map(({ san }) => san)).toEqual([
+      'e4',
+      'e5',
+    ]);
+  });
+
+  it('removes a nested line up to the last branch', () => {
+    const chess = new Chess();
+    chess.move('e4');
+    chess.move('e5');
+    chess.move('Nf3');
+    chess.move('Nc6');
+
+    const start = updateTree(chess.history({ verbose: true }), ImmutableMap());
+    chess.undo();
+    chess.move('d6');
+    chess.move('Bc4');
+    const intermediate = updateTree(chess.history({ verbose: true }), start);
+    chess.undo();
+    chess.move('d3');
+    chess.move('h5');
+
+    const final = updateTree(chess.history({ verbose: true }), intermediate);
+    chess.undo();
+
+    const removed = removeAfter(chess.history({ verbose: true }), final);
+
+    const first = removed.get('e4');
+    expect(first).not.toBeUndefined();
+    expect(first?.moves.map(({ san }) => san)).toEqual([
+      'e4',
+      'e5',
+      'Nf3',
+    ]);
+
+    const branches = first?.branches;
+    expect(branches?.size).toBe(2);
+
+    const sub1 = branches?.get('Nc6');
+    const sub2 = branches?.get('d6');
+
+    expect(sub1).not.toBeUndefined();
+    expect(sub2).not.toBeUndefined();
+    expect(sub1?.branches.isEmpty()).toBeTruthy();
+    expect(sub2?.branches.isEmpty()).toBeTruthy();
+
+    expect(sub1?.moves.map(({ san }) => san)).toEqual([
+      'Nc6',
+    ]);
+
+    expect(sub2?.moves.map(({ san }) => san)).toEqual([
+      'd6',
+      'Bc4',
+    ]);
   });
 });

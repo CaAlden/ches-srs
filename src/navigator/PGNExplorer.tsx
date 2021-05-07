@@ -43,6 +43,16 @@ const MoveComponent: FC<IMoveProps> = ({ san, history, id, inline = false }) => 
               <li className="list-group-item p-0">
                 <button
                   onClick={() => {
+                    controller.removeAfter(history.toArray());
+                    setShowPopover(false);
+                  }}
+                  className="btn btn-sm btn-outline-primary w-100">
+                  Delete From Here
+                </button>
+              </li>
+              <li className="list-group-item p-0">
+                <button
+                  onClick={() => {
                     controller.removeLine(history.toArray());
                     setShowPopover(false);
                   }}
@@ -106,7 +116,7 @@ const Branches: FC<{ branches: ImmutableMap<string, MoveTree>; previousMoves: Li
                     const elm = (
                       <React.Fragment key={`${move}-${i}`}>
                         {(move.color === 'w' || i === 0) && (
-                          <span className="mr-1">{tree.sectionStart + Math.floor(i / 2)}.</span>
+                          <span className="mr-1">{tree.sectionStart + Math.floor((i + 1) / 2)}.</span>
                         )}
                         {move.color === 'b' && i === 0 && <span className="mx-1">...</span>}
                         <MoveComponent

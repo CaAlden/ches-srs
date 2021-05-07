@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import { Api as ChessgroundApi } from 'chessground/api';
 import { Chess, ChessInstance, Move, ShortMove } from 'chess.js';
 import { Chessground } from 'chessground';
@@ -147,6 +147,49 @@ export function removeLine(line: Move[], tree: ImmutableMap<string, MoveTree>): 
   });
 }
 
+export function removeAfter(line: Move[], tree: ImmutableMap<string, MoveTree>): ImmutableMap<string, MoveTree> {
+  if (line.length < 1) {
+    return ImmutableMap();
+  }
+
+  const branch = tree.get(line[0].san);
+  if (branch === undefined) {
+    // If the move isn't in the tree then just return the tree.
+    return tree;
+  }
+
+  // i is needed later so declared outside the loop
+  let i = 0;
+  for (let j = 0; j < branch.moves.length; j++, i++) {
+    if (i === line.length - 1 && areMovesEqual(branch.moves[j], line[i])) {
+      const remaining = branch.moves.slice(0, j);
+      if (remaining.length === 0) {
+        return tree.remove(line[0].san);
+      } else {
+        return tree.set(line[0].san, {
+          ...branch,
+          moves: remaining,
+          branches: ImmutableMap(),
+        });
+      }
+    }
+    if (!areMovesEqual(branch.moves[j], line[i])) {
+      // The branch doesn't exist in the tree.
+      return tree;
+    }
+  }
+
+  const subBranches = removeAfter(line.slice(i), branch.branches);
+  return tree.set(line[0].san, subBranches.size === 1 ? {
+    ...branch,
+    moves: [...branch.moves, ...(subBranches.first<MoveTree | undefined>()?.moves ?? [])],
+    branches: ImmutableMap(),
+  } : {
+    ...branch,
+    branches: removeAfter(line.slice(i), branch.branches),
+  });
+}
+
 class Controller {
   private cg: ChessgroundApi | null;
   private chess: ChessInstance;
@@ -221,11 +264,11 @@ class Controller {
     };
   };
 
-  public move = (m: string | ShortMove | Move) => {
+  public move = (m: ShortMove | Move) => {
     this.makeMoves([m]);
   };
 
-  public makeMoves = (moves: Array<string | ShortMove | Move>, clearHistory: boolean = false) => {
+  public makeMoves = (moves: Array<Move | ShortMove>, clearHistory: boolean = false) => {
     if (clearHistory) {
       this.chess.load_pgn('');
     }
@@ -233,7 +276,11 @@ class Controller {
     for (let m of moves) {
       this.chess.move(m);
     }
+    const last = moves.length > 0 ? moves[moves.length - 1] : undefined;
     this.cg?.set(this.calcCGConfig());
+    this.cg?.set({
+      lastMove: last ? [last.to, last.from] : undefined,
+    });
     const currentHistory = this.chess.history({ verbose: true });
     this.internalMoveTree = updateTree(currentHistory, this.internalMoveTree);
     this.onUpdate?.();
@@ -278,6 +325,34 @@ class Controller {
         break;
       }
       for (let move of branch.moves) {
+        if (i >= line.length) {
+          break;
+        }
+        if (areMovesEqual(move, line[i])) {
+          newHistory.push(move);
+        }
+        i++;
+      }
+      newHistory.push(...branch.moves);
+      branches = branch.branches;
+    }
+
+    this.makeMoves(newHistory, true);
+  };
+
+  public removeAfter = (line: Move[]) => {
+    this.internalMoveTree = removeAfter(line, this.internalMoveTree);
+    // Reset chess
+    let branches = this.internalMoveTree;
+    let i = 0;
+    
+    let newHistory: Move[] = [];
+    while (branches !== undefined && i < line.length) {
+      const branch = branches.get(line[i].san);
+      if (branch === undefined) {
+        break;
+      }
+      for (let move of branch.moves) {
         if (areMovesEqual(move, line[i])) {
           newHistory.push(move);
         }
@@ -298,7 +373,7 @@ class Controller {
   public stepBack = () => {
     this.chess.undo();
     const history = this.chess.history({ verbose: true });
-    const last = history.length > 0 ? history[history.length - 1] : undefined;;
+    const last = history.length > 0 ? history[history.length - 1] : undefined;
     this.cg?.set(this.calcCGConfig());
     this.cg?.set({
       lastMove: last && [last.to, last.from],
@@ -365,10 +440,20 @@ const ControllerContext = React.createContext(new Controller());
 export const ProvideController = ControllerContext.Provider;
 export const useController = () => {
   const controller = useContext(ControllerContext);
+  const isMounted = useRef(false);
   // Force a rerender by setting a counter value in a subscribe callback
   const [, setDirty] = useState(0);
   useEffect(() => {
-    return controller.subscribe(() => setDirty(d => d + 1));
+    isMounted.current = true;
+    const unsubscribe = controller.subscribe(() => {
+      if (isMounted.current) {
+        setDirty(d => d + 1);
+      }
+    });
+    return () => {
+      isMounted.current = false;
+      unsubscribe();
+    };
   }, []);
   return controller;
 };
