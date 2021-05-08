@@ -22,7 +22,7 @@ const DateCodec = new t.Type<Date>(
   i => i,
 );
 
-const jsonCodec = <T>(codec: t.Type<T>, toJSON: (t: T) => string = JSON.stringify): t.Type<T, string, unknown> => {
+export const jsonCodec = <T>(codec: t.Type<T>, toJSON: (t: T) => string = JSON.stringify): t.Type<T, string, unknown> => {
   return new t.Type(
     `JSON(${codec.name})`,
     codec.is,
@@ -160,7 +160,7 @@ const MoveTreeCodec: t.Type<MoveTree, MoveTree, unknown> = t.recursion('moveTree
   }),
 );
 
-export const MoveTreeJsonCodec: t.Type<MoveTree, string, string | null> = jsonCodec(
+export const MoveTreeJsonCodec: t.Type<MoveTree, string, unknown> = jsonCodec(
   MoveTreeCodec,
   tree =>
     JSON.stringify({
@@ -179,16 +179,20 @@ const ItemCodec: t.Type<IItem> = t.type({
   nextMove: t.string,
 });
 
-export const ItemJsonCodec: t.Type<IItem, string, string | null> = jsonCodec(ItemCodec);
+export const ItemJsonCodec: t.Type<IItem, string, unknown> = jsonCodec(ItemCodec);
 
 const OpeningCodec: t.Type<IOpening> = t.type({
   id: t.string,
   name: t.string,
+  color: t.keyof({
+    w: null,
+    b: null,
+  }),
   moveTree: MoveTreeCodec,
   items: t.array(t.string),
 });
 
-export const OpeningJsonCodec: t.Type<IOpening, string, string | null> = jsonCodec(
+export const OpeningJsonCodec: t.Type<IOpening, string, unknown> = jsonCodec(
   OpeningCodec,
   e => JSON.stringify({
     ...e,

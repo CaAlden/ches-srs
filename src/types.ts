@@ -4,10 +4,7 @@
 
 import { MoveTree } from './controller';
 
-export enum Color {
-  White = 'w',
-  Black = 'b',
-}
+export type Color = 'w' | 'b';
 
 type Id = string;
 type Ref<T extends IPersisted> = T['id'];
@@ -19,6 +16,7 @@ interface IPersisted {
 interface IOpeningBase extends IPersisted {
   name: string;
   moveTree: MoveTree;
+  color: Color;
 }
 
 export interface IOpening extends IOpeningBase {

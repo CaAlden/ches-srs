@@ -1,22 +1,27 @@
 import {getOrElse} from 'fp-ts/lib/Either';
 import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {useIsMounted} from '../utils';
 
-interface ISelectorContext {
-  getItem: (key: string) => string | null;
+export const useLocalStorage = (): Storage => {
+  if ('localStorage' in window) {
+    return window.localStorage;
+  } else {
+    throw new Error('Local Storage seems not to be supported');
+  }
 };
 
-export function useStorageSelector<T>(f: (ctx: ISelectorContext) => T, depKeys?: string[]) {
+export function useStorageSelector<T>(f: (ctx: Storage) => T, depKeys?: string[]) {
   const isMounted = useIsMounted();
-  const [state, setState] = useState(f({ getItem: localStorage.getItem }));
+  const storage = useLocalStorage();
+  const [state, setState] = useState(f(storage));
 
   // Cause rerenders when the storage changes;
   useEffect(() => {
     const storageListener = (e: StorageEvent) => {
       if ((!depKeys || (e.key && depKeys.includes(e.key))) && isMounted.current) {
-        setState(f({ getItem: localStorage.getItem }));
+        setState(f(storage));
       }
     };
     addEventListener('storage', storageListener);
@@ -29,13 +34,14 @@ export function useStorageSelector<T>(f: (ctx: ISelectorContext) => T, depKeys?:
 }
 
 export const useStoreValue = (key: string) => {
-  const value = useStorageSelector(({ getItem }) => getItem(key));
+  const storage = useLocalStorage();
+  const value = useStorageSelector((storage) => storage.getItem(key), [key]);
   const updateStoredValue = useCallback((value: string) => {
-    localStorage.setItem(key, value);
+    storage.setItem(key, value);
   }, [key]);
 
   const clearStoredValue = useCallback(() => {
-    localStorage.removeItem(key);
+    storage.removeItem(key);
   }, [key]);
 
   return {
@@ -45,7 +51,7 @@ export const useStoreValue = (key: string) => {
   };
 };
 
-export function createStoredTypeHook<T>(codec: t.Type<T, string, string | null>) {
+export function createStoredTypeHook<T>(codec: t.Type<T, string, unknown>) {
   return (key: string) => {
     const {
       value,
