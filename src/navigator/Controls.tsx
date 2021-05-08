@@ -1,5 +1,6 @@
 import React, { FC, useEffect, useRef } from 'react';
 import { useController } from '../controller';
+import {useIsMounted} from '../utils';
 
 interface IButtonProps {
   onClick: () => void;
@@ -7,18 +8,6 @@ interface IButtonProps {
   keyCode?: string;
   shift?: boolean;
 }
-
-const useIsMounted = () => {
-  const isMountedRef = useRef(false);
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  return isMountedRef;
-};
 
 const ControlButton: FC<IButtonProps> = ({ onClick, children, disabled, keyCode, shift }) => {
   const btnRef = useRef<null | HTMLButtonElement>(null);
