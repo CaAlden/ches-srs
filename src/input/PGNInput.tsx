@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { getOrElse } from 'fp-ts/lib/Either';
 import React, { useEffect, useState } from 'react';
 import { useController } from '../controller';
-import { PGNCodec } from './codecs';
+import { PGNCodec } from '../codecs';
 
 export default function PGNInput() {
   const controller = useController();
