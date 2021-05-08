@@ -48,7 +48,6 @@ export default function Controls() {
   return (
     <div className="btn-group flex-grow-1" role="group">
       <ControlButton
-        keyCode="KeyF"
         onClick={() => {
           controller.flipPerspective();
         }}>

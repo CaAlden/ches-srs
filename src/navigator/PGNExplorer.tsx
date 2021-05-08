@@ -27,7 +27,7 @@ const MoveComponent: FC<IMoveProps> = ({ san, history, id, inline = false }) => 
         onClick={() => {
           controller.makeMoves(history.toArray(), true);
         }}
-        className={`btn p-0 ${inline ? 'mx-1' : 'w-100'}`}>
+        className={`btn p-0${inline ? '' : ' w-100'}`}>
         {san}
       </button>
       <Overlay
@@ -83,7 +83,7 @@ const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; base: L
   const dots = <span className="d-flex justify-content-center">...</span>
   return (
     <tr className="align-middle">
-      <td>{moveNumber}.</td>
+      <td className="fw-bold">{moveNumber}.</td>
       <td className={is(whiteMoveHistory, currentHistory) ? 'table-active' : ''}>
         {white ? <MoveComponent id={whiteKey} san={white.san} history={base.push(white)} /> : dots}
       </td>
@@ -117,7 +117,7 @@ const Branches: FC<{ branches: ImmutableMap<string, MoveTree>; previousMoves: Li
                     const elm = (
                       <React.Fragment key={`${move}-${i}`}>
                         {(move.color === 'w' || i === 0) && (
-                          <span className="mr-1">{tree.sectionStart + Math.floor((i + 1) / 2)}.</span>
+                          <span className="mx-1 fw-bold">{tree.sectionStart + Math.floor((i + 1) / 2)}.</span>
                         )}
                         {move.color === 'b' && i === 0 && <span className="mx-1">...</span>}
                         <MoveComponent

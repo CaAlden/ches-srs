@@ -27,6 +27,27 @@ const InputPage = () => {
       </div>
       <div className="p-3 col-4 d-flex">
         <Navigator>
+          <div className="flex-grow-1">
+            <div className="mb-3 d-flex flex-column">
+              <label className="form-label" htmlFor="opening-name">Opening</label>
+              <input id="opening-name" className="form-text" size={18} />
+            </div>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="opening-color">Color</label>
+              <div className="form-check" id="opening-color">
+                <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" checked />
+                <label className="form-check-label" htmlFor="flexRadioDefault1">
+                  White
+                </label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" />
+                <label className="form-check-label" htmlFor="flexRadioDefault2">
+                  Black
+                </label>
+              </div>
+            </div>
+          </div>
           <div className="btn-group justify-content-center flex-grow-1">
             {isNew ? (
               <button className="btn btn-primary">Save</button>
