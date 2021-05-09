@@ -11,16 +11,24 @@ export const useOpening = createStoredTypeHook(OpeningJsonCodec);
 export const useItem = createStoredTypeHook(ItemJsonCodec);
 
 export const useItems = (itemIds: string[]) => {
-  return useStorageSelector((storage) =>
-    pipe(itemIds.map(storage.getItem), arr => arr.map(v => ItemJsonCodec.decode(v)), rights),
-  );
+  return useStorageSelector(storage =>
+    pipe(
+      itemIds.map(id => storage.getItem(id)),
+      arr => arr.map(v => ItemJsonCodec.decode(v)),
+      vals => {
+        console.log(vals);
+        return vals;
+      },
+      rights,
+    ),
+  itemIds);
 };
 
 const OPENING_REGISTRY_KEY = 'OPENINGS';
 const openingIdsCodec = t.union([t.null, jsonCodec(t.array(t.string))]);
 export const useOpeningsControl = () => {
   const openings = useStorageSelector(
-    (storage) =>
+    storage =>
       pipe(
         storage.getItem(OPENING_REGISTRY_KEY),
         openingIdsCodec.decode,
@@ -33,7 +41,6 @@ export const useOpeningsControl = () => {
       ),
     [OPENING_REGISTRY_KEY],
   );
-  console.log(openings);
 
   const storage = useLocalStorage();
 
@@ -41,19 +48,24 @@ export const useOpeningsControl = () => {
     openings,
     updateOpening: (opening: IOpening) => {
       storage.setItem(opening.id, OpeningJsonCodec.encode(opening));
-      const currentReg = pipe(openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)), getOrElse((): string[] | null => null)) ?? [];
+      const currentReg =
+        pipe(
+          openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)),
+          getOrElse((): string[] | null => null),
+        ) ?? [];
       storage.setItem(OPENING_REGISTRY_KEY, JSON.stringify(ImmutableSet([...currentReg, opening.id]).toJS()));
     },
-    removeOpening: (opening: string | IOpening) => {
-      const oId = typeof opening === 'string' ? opening : opening.id;
-      storage.removeItem(oId);
-      const currentReg = pipe(openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)), getOrElse((): string[] | null => null)) ?? [];
-      storage.setItem(
-        OPENING_REGISTRY_KEY,
-        JSON.stringify(
-          currentReg.filter(id => id !== oId)
-        ),
-      );
+    removeOpening: (opening: IOpening) => {
+      for (let itemId of opening.items) {
+        storage.removeItem(itemId);
+      }
+      storage.removeItem(opening.id);
+      const currentReg =
+        pipe(
+          openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)),
+          getOrElse((): string[] | null => null),
+        ) ?? [];
+      storage.setItem(OPENING_REGISTRY_KEY, JSON.stringify(currentReg.filter(id => id !== opening.id)));
     },
   };
 };

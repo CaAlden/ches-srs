@@ -56,10 +56,13 @@ const OpeningRow: FC<{ opening: IOpening }> = ({ opening }) => {
           <Link to={`/opening/${opening.id}`} className="btn btn-outline-primary btn-sm" role="button">
             Edit
           </Link>
-          <button className={`d-flex gap-1 btn btn-sm btn-primary${pendingReviews > 0 ? '' : ' disabled'}`}>
+          <Link
+            to={`/study/${opening.id}`}
+            className={`d-flex gap-1 btn btn-sm btn-primary${pendingReviews + unlearedItems > 0 ? '' : ' disabled'}`}
+            role="button">
             Study
             {pendingReviews > 0 && <span className="badge bg-danger d-flex align-items-center">{pendingReviews}</span>}
-          </button>
+          </Link>
         </div>
       </td>
     </tr>
@@ -77,8 +80,10 @@ const DashboardPage = () => {
   useEffect(() => {
     if (showDeleted && !timeoutRef.current) {
       timeoutRef.current = setTimeout(() => {
-        setShowDeleted(false);
-        history.push('/');
+        if (isMounted.current) {
+          setShowDeleted(false);
+          history.push('/');
+        }
       }, 3000);
     }
 

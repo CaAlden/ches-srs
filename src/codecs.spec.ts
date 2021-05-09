@@ -20,7 +20,9 @@ describe('codecs', () => {
     it('encodes an item to expected JSON', () => {
       expect(ItemJsonCodec.encode({
         id: 'testItemId',
-        EF: 1,
+        comment: '',
+        interval: 1,
+        EF: 2.5,
         nextReview: new Date(0),
         pgn: '1. e4',
         finalPosition: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
@@ -28,7 +30,9 @@ describe('codecs', () => {
       })).toEqual(
         JSON.stringify({
           id: 'testItemId',
-          EF: 1,
+          comment: '',
+          interval: 1,
+          EF: 2.5,
           nextReview: new Date(0).toISOString(),
           pgn: '1. e4',
           finalPosition: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
@@ -40,7 +44,9 @@ describe('codecs', () => {
     it('decodes an Item from expected JSON', () => {
       expect(ItemJsonCodec.decode(JSON.stringify({
         id: 'testItemId',
-        EF: 1,
+        comment: '',
+        interval: 1,
+        EF: 2.5,
         nextReview: new Date(0),
         pgn: '1. e4',
         finalPosition: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
@@ -49,7 +55,9 @@ describe('codecs', () => {
         _tag: 'Right',
         right: {
           id: 'testItemId',
-          EF: 1,
+          comment: '',
+          interval: 1,
+          EF: 2.5,
           nextReview: new Date(0),
           pgn: '1. e4',
           finalPosition: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
@@ -64,6 +72,7 @@ describe('codecs', () => {
       name: 'Test Opening',
       id: 'testId',
       items: [],
+      comments: ImmutableMap(),
       moveTree: ImmutableMap(),
       color: 'w',
     };
@@ -93,6 +102,7 @@ describe('codecs', () => {
         name: 'Test Opening',
         id: 'testId',
         items: [],
+        comments: {},
         moveTree: {},
         color: 'w',
       }));
@@ -111,6 +121,7 @@ describe('codecs', () => {
         name: 'Test Opening',
         id: 'testId',
         items: [],
+        comments: {},
         moveTree: { e4: {
           moves: getMoves('e4', 'e5', 'Nc3'),
           sectionStart: 1,
@@ -142,6 +153,7 @@ describe('codecs', () => {
         name: 'Test Opening',
         id: 'testId',
         items: [],
+        comments: {},
         moveTree: { e4: {
           moves: getMoves('e4', 'e5'),
           sectionStart: 1,
@@ -173,4 +185,4 @@ describe('codecs', () => {
       }))
     });
   });
-})
+});

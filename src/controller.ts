@@ -190,18 +190,28 @@ export function removeAfter(line: Move[], tree: ImmutableMap<string, MoveTree>):
   });
 }
 
-class Controller {
+interface IControllerOptions {
+  perspective?: 'white' | 'black';
+  canMove?: (chess: ChessInstance) => boolean;
+  afterMove?: (chess: ChessInstance) => void;
+}
+
+export class Controller {
   private cg: ChessgroundApi | null;
   private chess: ChessInstance;
   private perspective: 'white' | 'black';
+  private canMove: (chess: ChessInstance) => boolean;
+  private afterMove: (chess: ChessInstance) => void;
 
   private subscribed: Array<() => void>;
   private internalMoveTree: ImmutableMap<string, MoveTree>;
 
-  public constructor(initialPerspective?: 'white' | 'black') {
+  public constructor({ perspective: initialPerspective, canMove, afterMove }: IControllerOptions) {
     this.subscribed = [];
     this.cg = null;
     this.perspective = initialPerspective ?? 'white';
+    this.canMove = canMove ?? (() => true);
+    this.afterMove = afterMove ?? (() => {});
     this.chess = new Chess();
     this.internalMoveTree = ImmutableMap();
   }
@@ -307,7 +317,10 @@ class Controller {
       move: (from, to) => {
         // Chessground Key type is not exactly assignable to the Chess.js short move type but
         // it seems to be good enough for moving
-        this.move({ from, to } as ShortMove);
+        if (this.canMove(this.chess)) {
+          this.move({ from, to } as ShortMove);
+        }
+        this.afterMove(this.chess);
       },
     },
   });
@@ -441,9 +454,13 @@ class Controller {
       this.cg = null;
     }
   };
+
+  public get turn() {
+    return this.chess.turn();
+  }
 }
 
-const ControllerContext = React.createContext(new Controller());
+const ControllerContext = React.createContext(new Controller({}));
 export const ProvideController = ControllerContext.Provider;
 export const useController = () => {
   const controller = useContext(ControllerContext);

@@ -21,6 +21,7 @@ export function useStorageSelector<T>(f: (ctx: Storage) => T, depKeys?: string[]
   useEffect(() => {
     const storageListener = (e: StorageEvent) => {
       if ((!depKeys || (e.key && depKeys.includes(e.key))) && isMounted.current) {
+        console.log(`Updating ${e.key}`);
         setState(f(storage));
       }
     };
@@ -28,21 +29,23 @@ export function useStorageSelector<T>(f: (ctx: Storage) => T, depKeys?: string[]
     return () => {
       removeEventListener('storage', storageListener);
     };
-  });
+  }, [f, depKeys, storage]);
 
   return state;
 }
 
 export const useStoreValue = (key: string) => {
   const storage = useLocalStorage();
-  const value = useStorageSelector((storage) => storage.getItem(key), [key]);
+  const value = useStorageSelector((s) => {
+    return s.getItem(key);
+  });
   const updateStoredValue = useCallback((value: string) => {
     storage.setItem(key, value);
-  }, [key]);
+  }, [key, storage]);
 
   const clearStoredValue = useCallback(() => {
     storage.removeItem(key);
-  }, [key]);
+  }, [key, storage]);
 
   return {
     value,

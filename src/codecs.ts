@@ -71,7 +71,7 @@ export const PGNCodec: t.Type<string, string, string> = new t.Type(
   isPgn,
   (i, c) => {
     const chess = new Chess();
-    if (chess.load_pgn(i)) {
+    if (i === '' || chess.load_pgn(i)) {
       return t.success(chess.pgn());
     } else {
       return t.failure(i, c, `Could not parse a PGN, given: ${i}`);
@@ -172,6 +172,8 @@ export const MoveTreeJsonCodec: t.Type<MoveTree, string, unknown> = jsonCodec(
 const ItemCodec: t.Type<IItem> = t.type({
   id: t.string,
   EF: t.number,
+  comment: t.string,
+  interval: t.number,
   nextReview: t.union([DateCodec, t.null]),
   pgn: t.string.pipe(PGNCodec),
   finalPosition: t.string.pipe(FENCodec),
@@ -181,12 +183,13 @@ const ItemCodec: t.Type<IItem> = t.type({
 
 export const ItemJsonCodec: t.Type<IItem, string, unknown> = jsonCodec(ItemCodec, (t) => JSON.stringify({
   ...t,
-  nextReview: t.nextReview?.toISOString(),
+  nextReview: t.nextReview?.toISOString() ?? null,
 }));
 
 const OpeningCodec: t.Type<IOpening> = t.type({
   id: t.string,
   name: t.string,
+  comments: immutableMap(t.string, t.string),
   moveTree: immutableMap<string, MoveTree>(t.string, MoveTreeCodec),
   color: t.keyof({ b: null, w: null }),
   items: t.array(t.string),
@@ -214,6 +217,7 @@ export const OpeningJsonCodec: t.Type<IOpening, string, unknown> = new t.Type(
   },
   i => JSON.stringify({
     ...i,
+    comments: i.comments.toJS(),
     moveTree: deeplyJS(i.moveTree),
   }),
 );

@@ -9,14 +9,18 @@ import Navigator from '../navigator';
 import TabsContainer from '../input/Tabs';
 import FENInput from '../input/FENInput';
 import PGNInput from '../input/PGNInput';
-import { useRouteMatch } from 'react-router';
+import { Redirect, useRouteMatch } from 'react-router';
 import { useOpening, useOpeningsControl } from '../persist/hooks';
 import { IOpening } from '../types';
 import {useController} from '../controller';
+import {generateItems} from '../srs';
+import {useLocalStorage} from '../persist/store';
+import {ItemJsonCodec} from '../codecs';
 
 const getNewOpening = (id: string): IOpening => ({
   id,
   name: '',
+  comments: ImmutableMap(),
   moveTree: ImmutableMap(),
   color: 'w',
   items: [],
@@ -24,20 +28,20 @@ const getNewOpening = (id: string): IOpening => ({
 
 const InputPage = () => {
   const controller = useController();
+  const storage = useLocalStorage();
   const openingControl = useOpeningsControl();
 
-  const [dirty, setDirty] = useState(0);
   const route = useRouteMatch<{ id: string }>({ path: '/opening/:id' });
   const routeId = route?.params.id;
   const id = useRef(routeId && routeId !== 'new' ? routeId : v4());
   const { value: storedOpening } = useOpening(id.current);
   const [opening, setOpening] = useState(storedOpening ?? getNewOpening(id.current));
   const history = useHistory();
-  const [isNew, setIsNew] = useState(Boolean(routeId === 'new' || storedOpening === null))
+  const [isNew, setIsNew] = useState(routeId === 'new')
   
   useEffect(() => {
-    setIsNew(Boolean(routeId === 'new' || storedOpening === null));
-  }, [dirty]);
+    setIsNew(routeId === 'new');
+  }, [routeId, storedOpening]);
 
   useEffect(() => {
     controller.setMoveTree(opening.moveTree);
@@ -51,6 +55,10 @@ const InputPage = () => {
       });
     }
   }, [controller.moveTree]);
+
+  if (storedOpening === null && !isNew) {
+    return <Redirect to="/404" />;
+  }
 
   return (
     <Page title="New Opening Input">
@@ -127,8 +135,11 @@ const InputPage = () => {
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  openingControl.updateOpening(opening);
-                  setDirty(d => d + 1);
+                  const items = generateItems(opening);
+                  for (let item of items) {
+                    storage.setItem(item.id, ItemJsonCodec.encode(item));
+                  }
+                  openingControl.updateOpening({ ...opening, items: items.map(i => i.id) });
                   history.push(`/opening/${id.current}`);
                 }}>
                 Save
@@ -138,8 +149,11 @@ const InputPage = () => {
                 <button
                   className="btn btn-sm btn-primary"
                   onClick={() => {
-                    openingControl.updateOpening(opening);
-                    setDirty(d => d + 1);
+                    const items = generateItems(opening);
+                    for (let item of items) {
+                      storage.setItem(item.id, ItemJsonCodec.encode(item));
+                    }
+                    openingControl.updateOpening({ ...opening, items: items.map(i => i.id) });
                   }}>
                   Save
                 </button>

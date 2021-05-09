@@ -17,6 +17,8 @@ interface IPersisted {
 interface IOpeningBase extends IPersisted {
   name: string;
   moveTree: ImmutableMap<string, MoveTree>;
+  // Comments linked to the position on the board
+  comments: ImmutableMap<string, string>;
   color: Color;
 }
 
@@ -24,15 +26,19 @@ export interface IOpening extends IOpeningBase {
   items: Ref<IItem>[];
 }
 
-export interface IOpeningResolved extends IOpeningBase {
-  items: IItem[];
-}
-
 export interface IItem extends IPersisted {
   /**
    * Ease Factor for calculating the next interval.
    */
   EF: number;
+  /**
+   * Time for next review in days
+   */
+  interval: number;
+  /**
+   * Information to include with the position.
+   */
+  comment: string;
   /**
    * The date of the next time to review this item.
    * Null when the item is unlearned.
@@ -47,6 +53,7 @@ export interface IItem extends IPersisted {
    * This could be used for detecting transpositions.
    */
   finalPosition: string;
+
   /**
    * The next move to play.
    */
