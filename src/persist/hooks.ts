@@ -1,71 +1,56 @@
-import { createStoredTypeHook, useLocalStorage, useStorageSelector } from './store';
+import { createManyStoredTypeHook, createStoredTypeHook, useLocalStorage, useRegistryDirectlyInsteadOfUsingHelper, useStoreValue } from './store';
 import { ItemJsonCodec, jsonCodec, OpeningJsonCodec } from '../codecs';
 import { Set as ImmutableSet } from 'immutable';
 import * as t from 'io-ts';
 import { pipe } from 'fp-ts/lib/function';
-import { rights } from 'fp-ts/lib/Array';
 import { getOrElse } from 'fp-ts/lib/Either';
-import { IOpening } from '../types';
+import { IItem, IOpening } from '../types';
+import {useMemo} from 'react';
 
 export const useOpening = createStoredTypeHook(OpeningJsonCodec);
 export const useItem = createStoredTypeHook(ItemJsonCodec);
+export const useOpenings = createManyStoredTypeHook(OpeningJsonCodec);
+const useItemsInternal = createManyStoredTypeHook(ItemJsonCodec);
 
-export const useItems = (itemIds: string[]) => {
-  return useStorageSelector(storage =>
-    pipe(
-      itemIds.map(id => storage.getItem(id)),
-      arr => arr.map(v => ItemJsonCodec.decode(v)),
-      vals => {
-        console.log(vals);
-        return vals;
-      },
-      rights,
-    ),
-  itemIds);
+export const useItems = (keys: string[]) => {
+  const { value } = useItemsInternal(keys);
+  return useMemo(() => value.valueSeq().toArray().filter((x): x is IItem => x !== null), [value]);
 };
 
 const OPENING_REGISTRY_KEY = 'OPENINGS';
 const openingIdsCodec = t.union([t.null, jsonCodec(t.array(t.string))]);
-export const useOpeningsControl = () => {
-  const openings = useStorageSelector(
-    storage =>
-      pipe(
-        storage.getItem(OPENING_REGISTRY_KEY),
-        openingIdsCodec.decode,
-        getOrElse((): string[] | null => []),
-        idsOrNull => (idsOrNull === null ? [] : idsOrNull),
-        arr => arr.map(v => storage.getItem(v)),
-        arr => arr.map(v => OpeningJsonCodec.decode(v)),
-        rights,
-        vals => ImmutableSet(vals),
-      ),
-    [OPENING_REGISTRY_KEY],
-  );
 
+export const useOpeningsControl = () => {
   const storage = useLocalStorage();
+  const registry = useRegistryDirectlyInsteadOfUsingHelper();
+  const {
+    value: openingIdsRaw,
+    setValue: setOpeningIds,
+  } = useStoreValue(OPENING_REGISTRY_KEY);
+  const openingIds = useMemo(() => pipe(
+    openingIdsRaw,
+    openingIdsCodec.decode,
+    getOrElse((): string[] | null => []),
+    idsOrNull => (idsOrNull === null ? [] : idsOrNull),
+    ids => ImmutableSet(ids),
+  ), [openingIdsRaw]);
+
+  const { value: openings, setValue: updateOpening, remove: removeOpening } = useOpenings(openingIds.toArray());
 
   return {
-    openings,
+    openings: openings.filter((op): op is IOpening => op !== null).toList(),
     updateOpening: (opening: IOpening) => {
-      storage.setItem(opening.id, OpeningJsonCodec.encode(opening));
-      const currentReg =
-        pipe(
-          openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)),
-          getOrElse((): string[] | null => null),
-        ) ?? [];
-      storage.setItem(OPENING_REGISTRY_KEY, JSON.stringify(ImmutableSet([...currentReg, opening.id]).toJS()));
+      setOpeningIds(JSON.stringify(openingIds.add(opening.id).toArray()));
+      updateOpening(opening.id, opening);
     },
     removeOpening: (opening: IOpening) => {
       for (let itemId of opening.items) {
         storage.removeItem(itemId);
+        // Have to manual notify here to correctly update items when doing this sort of cascaded delete.
+        registry.notify(itemId);
       }
-      storage.removeItem(opening.id);
-      const currentReg =
-        pipe(
-          openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)),
-          getOrElse((): string[] | null => null),
-        ) ?? [];
-      storage.setItem(OPENING_REGISTRY_KEY, JSON.stringify(currentReg.filter(id => id !== opening.id)));
+      removeOpening(opening.id);
+      setOpeningIds(JSON.stringify(openingIds.filter(id => id !== opening.id).toArray()));
     },
   };
 };

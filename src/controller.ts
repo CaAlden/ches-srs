@@ -274,11 +274,11 @@ export class Controller {
     };
   };
 
-  public move = (m: ShortMove | Move) => {
+  public move = (m: ShortMove | Move | string) => {
     this.makeMoves([m]);
   };
 
-  public makeMoves = (moves: Array<Move | ShortMove>, clearHistory: boolean = false) => {
+  public makeMoves = (moves: Array<string | Move | ShortMove>, clearHistory: boolean = false) => {
     if (clearHistory) {
       this.chess.load_pgn('');
     }
@@ -289,7 +289,7 @@ export class Controller {
     const last = moves.length > 0 ? moves[moves.length - 1] : undefined;
     this.cg?.set(this.calcCGConfig());
     this.cg?.set({
-      lastMove: last ? [last.to, last.from] : undefined,
+      lastMove: last && typeof last !== 'string' ? [last.to, last.from] : undefined,
     });
     const currentHistory = this.chess.history({ verbose: true });
     this.internalMoveTree = updateTree(currentHistory, this.internalMoveTree);

@@ -7,6 +7,7 @@ import { Redirect, useRouteMatch } from 'react-router';
 import { useItem, useItems, useOpening } from '../persist/hooks';
 import { Controller, ProvideController } from '../controller';
 import { Quality, updateItem } from '../srs';
+import {IItem} from '../types';
 
 const StudyButtons: FC<{
   onStudy: (quality: Quality) => void;
@@ -60,11 +61,12 @@ const StudyButtons: FC<{
   );
 };
 
-const StudyItem: FC<{ id: string; perspective: 'w' | 'b' }> = ({ id, perspective }) => {
-  const { value: item, setValue: setItem } = useItem(id);
+const StudyItem: FC<{ id: string; perspective: 'w' | 'b', openingId: string }> = ({ id, openingId, perspective }) => {
+  const { value: item, setValue: setItem } = useItem(id, [openingId]);
   const [studying, setStudying] = useState(true);
   const [correct, setCorrect] = useState(false);
-  const controller = useRef(new Controller({
+  const [,setDirty] = useState(0);
+  const controllerRef = useRef(new Controller({
     perspective: perspective === 'w' ? 'white' : 'black',
     canMove: chess => {
       return item !== null && item.pgn === chess.pgn();
@@ -76,12 +78,25 @@ const StudyItem: FC<{ id: string; perspective: 'w' | 'b' }> = ({ id, perspective
   }));
 
   useEffect(() => {
-    // If the id changes, set studying to true.
-    setStudying(true);
     if (item) {
-      controller.current.setPgn(item.pgn);
+      controllerRef.current = new Controller({
+        perspective: perspective === 'w' ? 'white' : 'black',
+        canMove: chess => {
+          return item !== null && item.pgn === chess.pgn();
+        },
+        afterMove: chess => {
+          setStudying(false);
+          setCorrect(chess.fen() === item?.finalPosition);
+        },
+      });
+      controllerRef.current.setPgn(item.pgn, true);
+      if (!studying) {
+        controllerRef.current.setPgn(item.pgn, true)
+        controllerRef.current.move(item.nextMove);
+      }
+      setDirty(d => d + 1);
     }
-  }, [id]);
+  }, [item, studying]);
 
   if (item === null) {
     return (
@@ -92,9 +107,9 @@ const StudyItem: FC<{ id: string; perspective: 'w' | 'b' }> = ({ id, perspective
   }
 
   const isNew = item.nextReview === null;
-  const scrolledAway = controller.current.pgn !== item.pgn;
+  const scrolledAway = controllerRef.current.pgn !== item.pgn;
   return (
-    <ProvideController value={controller.current}>
+    <ProvideController value={controllerRef.current}>
       <div className="col-12 g-3 d-flex justify-content-center">
         <Board />
         <Navigator>
@@ -136,6 +151,7 @@ const StudyItem: FC<{ id: string; perspective: 'w' | 'b' }> = ({ id, perspective
                     } else {
                       setItem(updateItem(item, q));
                     }
+                    setStudying(true);
                   }}
                 />
               </div>
@@ -152,10 +168,10 @@ function sortItemsByReviewDateAsc(a: IItem, b: IItem): number {
     return 0;
   }
   if (a.nextReview === null) {
-    return 1;
+    return -1;
   }
   if (b.nextReview === null) {
-    return -1;
+    return 1;
   }
 
   return a.nextReview.getUTCMilliseconds() - b.nextReview.getUTCMilliseconds();
@@ -186,7 +202,7 @@ const StudyPage = () => {
         {sorted.length === 0 ? (
           <div className="alert alert-success">Nothing to study!</div>
         ) : (
-          <StudyItem perspective={storedOpening.color} id={sorted[0].id} />
+          <StudyItem perspective={storedOpening.color} id={sorted[0].id} openingId={route.params.id} />
         )}
       </div>
     </Page>

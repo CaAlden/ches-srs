@@ -1,10 +1,6 @@
-import { rights } from 'fp-ts/lib/Array';
-import { pipe } from 'fp-ts/lib/function';
 import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { ItemJsonCodec } from '../codecs';
 import { useItems, useOpeningsControl } from '../persist/hooks';
-import { useStorageSelector } from '../persist/store';
 import { IItem, IOpening } from '../types';
 import { useIsMounted, useQuery } from '../utils';
 import Page from './Page';
@@ -20,14 +16,7 @@ function getUnlearnedItems(items: IItem[]) {
 
 const usePendingReviews = () => {
   const { openings } = useOpeningsControl();
-  const allItems = useStorageSelector(storage =>
-    pipe(
-      openings.flatMap(op => op.items).toArray(),
-      itemIds => itemIds.map(id => storage.getItem(id)),
-      rawItems => rawItems.map(item => ItemJsonCodec.decode(item)),
-      rights,
-    ),
-  );
+  const allItems = useItems(openings.flatMap(op => op.items).toArray());
   return getPendingReviews(allItems).length;
 };
 
