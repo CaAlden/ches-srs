@@ -10,7 +10,7 @@ import TabsContainer from '../input/Tabs';
 import FENInput from '../input/FENInput';
 import PGNInput from '../input/PGNInput';
 import { useRouteMatch } from 'react-router';
-import { useOpening } from '../persist/hooks';
+import { useOpening, useOpeningsControl } from '../persist/hooks';
 import { IOpening } from '../types';
 import {useController} from '../controller';
 
@@ -24,15 +24,20 @@ const getNewOpening = (id: string): IOpening => ({
 
 const InputPage = () => {
   const controller = useController();
+  const openingControl = useOpeningsControl();
 
-  const [, setDirty] = useState(0);
+  const [dirty, setDirty] = useState(0);
   const route = useRouteMatch<{ id: string }>({ path: '/opening/:id' });
   const routeId = route?.params.id;
   const id = useRef(routeId && routeId !== 'new' ? routeId : v4());
-  const { value: storedOpening, setValue: updateStoredOpening, remove: removeOpening } = useOpening(id.current);
+  const { value: storedOpening } = useOpening(id.current);
   const [opening, setOpening] = useState(storedOpening ?? getNewOpening(id.current));
   const history = useHistory();
-  const isNew = Boolean(routeId === 'new' || storedOpening === null);
+  const [isNew, setIsNew] = useState(Boolean(routeId === 'new' || storedOpening === null))
+  
+  useEffect(() => {
+    setIsNew(Boolean(routeId === 'new' || storedOpening === null));
+  }, [dirty]);
 
   useEffect(() => {
     controller.setMoveTree(opening.moveTree);
@@ -122,7 +127,7 @@ const InputPage = () => {
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  updateStoredOpening(opening);
+                  openingControl.updateOpening(opening);
                   setDirty(d => d + 1);
                   history.push(`/opening/${id.current}`);
                 }}>
@@ -133,7 +138,7 @@ const InputPage = () => {
                 <button
                   className="btn btn-sm btn-primary"
                   onClick={() => {
-                    updateStoredOpening(opening);
+                    openingControl.updateOpening(opening);
                     setDirty(d => d + 1);
                   }}>
                   Save
@@ -149,7 +154,7 @@ const InputPage = () => {
                 </button>
                 <button
                   onClick={() => {
-                    removeOpening();
+                    openingControl.removeOpening(opening);
                     history.push('/?deleted=1');
                   }}
                   className="btn btn-sm btn-outline-danger">

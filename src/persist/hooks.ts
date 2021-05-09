@@ -18,7 +18,7 @@ export const useItems = (itemIds: string[]) => {
 
 const OPENING_REGISTRY_KEY = 'OPENINGS';
 const openingIdsCodec = t.union([t.null, jsonCodec(t.array(t.string))]);
-export const useOpeningControl = () => {
+export const useOpeningsControl = () => {
   const openings = useStorageSelector(
     (storage) =>
       pipe(
@@ -26,12 +26,14 @@ export const useOpeningControl = () => {
         openingIdsCodec.decode,
         getOrElse((): string[] | null => []),
         idsOrNull => (idsOrNull === null ? [] : idsOrNull),
+        arr => arr.map(v => storage.getItem(v)),
         arr => arr.map(v => OpeningJsonCodec.decode(v)),
         rights,
         vals => ImmutableSet(vals),
       ),
     [OPENING_REGISTRY_KEY],
   );
+  console.log(openings);
 
   const storage = useLocalStorage();
 
@@ -39,18 +41,17 @@ export const useOpeningControl = () => {
     openings,
     updateOpening: (opening: IOpening) => {
       storage.setItem(opening.id, OpeningJsonCodec.encode(opening));
-      storage.setItem(OPENING_REGISTRY_KEY, JSON.stringify(openings.map(({ id }) => id).toArray()));
+      const currentReg = pipe(openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)), getOrElse((): string[] | null => null)) ?? [];
+      storage.setItem(OPENING_REGISTRY_KEY, JSON.stringify(ImmutableSet([...currentReg, opening.id]).toJS()));
     },
     removeOpening: (opening: string | IOpening) => {
       const oId = typeof opening === 'string' ? opening : opening.id;
       storage.removeItem(oId);
+      const currentReg = pipe(openingIdsCodec.decode(storage.getItem(OPENING_REGISTRY_KEY)), getOrElse((): string[] | null => null)) ?? [];
       storage.setItem(
         OPENING_REGISTRY_KEY,
         JSON.stringify(
-          openings
-            .map(({ id }) => id)
-            .filter(id => id !== oId)
-            .toArray(),
+          currentReg.filter(id => id !== oId)
         ),
       );
     },

@@ -35,8 +35,9 @@ export interface IItem extends IPersisted {
   EF: number;
   /**
    * The date of the next time to review this item.
+   * Null when the item is unlearned.
    */
-  nextReview: Date;
+  nextReview: Date | null;
   /**
    * A PGN representing the moves played leading to this position.
    */

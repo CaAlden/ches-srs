@@ -172,7 +172,7 @@ export const MoveTreeJsonCodec: t.Type<MoveTree, string, unknown> = jsonCodec(
 const ItemCodec: t.Type<IItem> = t.type({
   id: t.string,
   EF: t.number,
-  nextReview: DateCodec,
+  nextReview: t.union([DateCodec, t.null]),
   pgn: t.string.pipe(PGNCodec),
   finalPosition: t.string.pipe(FENCodec),
   // This could potentially be made into a safer type (for example check that the move is legal).
@@ -181,7 +181,7 @@ const ItemCodec: t.Type<IItem> = t.type({
 
 export const ItemJsonCodec: t.Type<IItem, string, unknown> = jsonCodec(ItemCodec, (t) => JSON.stringify({
   ...t,
-  nextReview: t.nextReview.toISOString(),
+  nextReview: t.nextReview?.toISOString(),
 }));
 
 const OpeningCodec: t.Type<IOpening> = t.type({
@@ -207,7 +207,7 @@ export const OpeningJsonCodec: t.Type<IOpening, string, unknown> = new t.Type(
         const parsed = JSON.parse(i);
         return OpeningCodec.decode(parsed);
       } catch (e) {
-        return t.failure(i, c, 'Invalid JSON');
+        return t.failure(i, c, `Invalid JSON ${e.message} -- ${i}`);
       }
     }
     return t.failure(i, c, 'Not given a string');
