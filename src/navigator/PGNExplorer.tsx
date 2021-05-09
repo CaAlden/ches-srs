@@ -27,7 +27,7 @@ const MoveComponent: FC<IMoveProps> = ({ san, history, id, inline = false }) => 
         onClick={() => {
           controller.makeMoves(history.toArray(), true);
         }}
-        className={`btn p-0${inline ? '' : ' w-100'}`}>
+        className={`btn btn-outline-secondary border-0 px-1${inline ? '' : ' w-100'}`}>
         {san}
       </button>
       <Overlay
@@ -80,7 +80,7 @@ const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; base: L
   const whiteKey = whiteMoveHistory.map(({ san }) => san).join('-');
   const blackMoveHistory = white && black ? base.push(white, black) : black ? base.push(black) : base;
   const blackKey = blackMoveHistory.map(({ san }) => san).join('-');
-  const dots = <span className="d-flex justify-content-center">...</span>
+  const dots = <span className="d-flex justify-content-center">...</span>;
   return (
     <tr className="align-middle">
       <td className="fw-bold">{moveNumber}.</td>
@@ -98,48 +98,55 @@ const MoveTableRow: FC<{ moveNumber: number; white?: Move; black?: Move; base: L
   );
 };
 
-const Branches: FC<{ branches: ImmutableMap<string, MoveTree>; previousMoves: List<Move> }> = ({
+const Row: FC = ({ children }) => (
+  <tr>
+    <td colSpan={3}>{children}</td>
+  </tr>
+);
+const NestedRow: FC = ({ children }) => <div className="w-100">{children}</div>;
+
+const Branches: FC<{ branches: ImmutableMap<string, MoveTree>; previousMoves: List<Move>; nested?: boolean }> = ({
   branches,
   previousMoves,
+  nested = false,
 }) => {
+  const RowComponent = nested ? NestedRow : Row;
   return branches.size === 0 ? null : (
-    <tr>
-      <td colSpan={3}>
-        <ul className="list-group">
-          {branches
-            .map((tree, san) => {
-              let innerMoves = previousMoves;
-              return (
-                <li
-                  key={san}
-                  className="d-inline-flex align-items-center flex-wrap list-group-item list-group-item-action list-group-item-info">
-                  {tree.moves.map((move, i) => {
-                    const elm = (
-                      <React.Fragment key={`${move}-${i}`}>
-                        {(move.color === 'w' || i === 0) && (
-                          <span className="mx-1 fw-bold">{tree.sectionStart + Math.floor((i + 1) / 2)}.</span>
-                        )}
-                        {move.color === 'b' && i === 0 && <span className="mx-1">...</span>}
-                        <MoveComponent
-                          inline
-                          id={innerMoves.map(({ san }) => san).join('-')}
-                          san={move.san}
-                          history={innerMoves.push(move)}
-                        />
-                      </React.Fragment>
-                    );
-                    innerMoves = innerMoves.push(move);
-                    return elm;
-                  })}
-                  <Branches branches={tree.branches} previousMoves={previousMoves.push(...tree.moves)} />
-                </li>
-              );
-            })
-            .valueSeq()
-            .toArray()}
-        </ul>
-      </td>
-    </tr>
+    <RowComponent>
+      <ul className="list-group">
+        {branches
+          .map((tree, san) => {
+            let innerMoves = previousMoves;
+            return (
+              <li
+                key={san}
+                className="d-inline-flex align-items-center flex-wrap list-group-item list-group-item-action">
+                {tree.moves.map((move, i) => {
+                  const elm = (
+                    <React.Fragment key={`${move}-${i}`}>
+                      {(move.color === 'w' || i === 0) && (
+                        <span className="mx-1 fw-bold">{tree.sectionStart + Math.floor((i + 1) / 2)}.</span>
+                      )}
+                      {move.color === 'b' && i === 0 && <span className="mx-1">...</span>}
+                      <MoveComponent
+                        inline
+                        id={innerMoves.map(({ san }) => san).join('-')}
+                        san={move.san}
+                        history={innerMoves.push(move)}
+                      />
+                    </React.Fragment>
+                  );
+                  innerMoves = innerMoves.push(move);
+                  return elm;
+                })}
+                <Branches branches={tree.branches} previousMoves={previousMoves.push(...tree.moves)} nested />
+              </li>
+            );
+          })
+          .valueSeq()
+          .toArray()}
+      </ul>
+    </RowComponent>
   );
 };
 

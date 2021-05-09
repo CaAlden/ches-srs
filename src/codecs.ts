@@ -179,23 +179,41 @@ const ItemCodec: t.Type<IItem> = t.type({
   nextMove: t.string,
 });
 
-export const ItemJsonCodec: t.Type<IItem, string, unknown> = jsonCodec(ItemCodec);
+export const ItemJsonCodec: t.Type<IItem, string, unknown> = jsonCodec(ItemCodec, (t) => JSON.stringify({
+  ...t,
+  nextReview: t.nextReview.toISOString(),
+}));
 
 const OpeningCodec: t.Type<IOpening> = t.type({
   id: t.string,
   name: t.string,
-  color: t.keyof({
-    w: null,
-    b: null,
-  }),
-  moveTree: MoveTreeCodec,
+  moveTree: immutableMap<string, MoveTree>(t.string, MoveTreeCodec),
+  color: t.keyof({ b: null, w: null }),
   items: t.array(t.string),
 });
 
-export const OpeningJsonCodec: t.Type<IOpening, string, unknown> = jsonCodec(
-  OpeningCodec,
-  e => JSON.stringify({
-    ...e,
-    moveTree: MoveTreeJsonCodec.encode(e.moveTree),
+const deeplyJS = (branches: ImmutableMap<string, MoveTree>): object => {
+  return branches.map(tree => ({ ...tree, branches: deeplyJS(tree.branches) })).toJS();
+};
+
+export const OpeningJsonCodec: t.Type<IOpening, string, unknown> = new t.Type(
+  'OpeningJson',
+  (x): x is IOpening  => {
+    throw new Error('unimplemented');
+  },
+  (i, c) => {
+    if (typeof i === 'string') {
+      try {
+        const parsed = JSON.parse(i);
+        return OpeningCodec.decode(parsed);
+      } catch (e) {
+        return t.failure(i, c, 'Invalid JSON');
+      }
+    }
+    return t.failure(i, c, 'Not given a string');
+  },
+  i => JSON.stringify({
+    ...i,
+    moveTree: deeplyJS(i.moveTree),
   }),
 );

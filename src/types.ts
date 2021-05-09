@@ -3,6 +3,7 @@
  */
 
 import { MoveTree } from './controller';
+import { OrderedMap as ImmutableMap } from 'immutable';
 
 export type Color = 'w' | 'b';
 
@@ -15,7 +16,7 @@ interface IPersisted {
 
 interface IOpeningBase extends IPersisted {
   name: string;
-  moveTree: MoveTree;
+  moveTree: ImmutableMap<string, MoveTree>;
   color: Color;
 }
 

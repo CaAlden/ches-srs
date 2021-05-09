@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import {useLocation} from 'react-router';
 
 export const useIsMounted = () => {
   const isMountedRef = useRef(false);
@@ -12,3 +13,6 @@ export const useIsMounted = () => {
   return isMountedRef;
 };
 
+export const useQuery = () => {
+  return new URLSearchParams(useLocation().search);
+};

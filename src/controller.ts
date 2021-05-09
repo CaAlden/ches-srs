@@ -426,6 +426,13 @@ class Controller {
     this.onUpdate?.();
   };
 
+  public setMoveTree = (tree: ImmutableMap<string, MoveTree>) => {
+    this.internalMoveTree = tree;
+    this.chess = new Chess();
+    this.cg?.set(this.calcCGConfig());
+    this.onUpdate?.();
+  }
+
   public refCallback = (node: null | HTMLDivElement) => {
     // Initialize the chessground view when given an HTML element
     if (node) {
